@@ -17,19 +17,20 @@
  */
 
 function lfciath_migrate_old_news_to_cpt() {
-    // ป้องกันรันซ้ำ
-    if ( get_option( 'lfciath_news_migrated' ) ) {
-        return;
-    }
+    // ลบ flag เก่าเพื่อให้รันใหม่ได้ (เพราะเพิ่ม slug ใหม่)
+    delete_option( 'lfciath_news_migrated' );
 
     // ============================================================
     // *** แก้ไขตรงนี้: ใส่ slug ของ post เก่าที่ต้องการย้าย ***
     // ============================================================
     $old_post_slugs = array(
+        'news-tournament-2642025',
+        'news-globalsession-april25',
+        'news-mou-the-reds-alliance-kpis',
+        'news-press-conference',
         'news-1anniversary-lfciath',
-        // เพิ่ม slug อื่นๆ ตามต้องการ เช่น:
-        // 'news-another-old-post',
-        // 'old-news-post-slug',
+        'news-ktaxa-2',
+        'news-zico-kiatisuk-senamuang',
     );
 
     $migrated = array();
