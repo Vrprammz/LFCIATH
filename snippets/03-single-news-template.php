@@ -15,9 +15,20 @@
  */
 
 // Override single template — render full page with header/footer
-// ใช้ template เดียวกันสำหรับทุก post (ทั้ง Elementor และ Gutenberg) เพื่อ UI ที่เป็นเอกภาพ
+// ถ้า post สร้างจาก Elementor → ข้าม ให้ Elementor render เอง (ป้องกัน header ซ้อน)
 function lfciath_news_single_template( $template ) {
     if ( is_singular( 'lfciath_news' ) ) {
+        global $post;
+
+        // ตรวจสอบว่า post นี้สร้างด้วย Elementor หรือไม่
+        $is_elementor = get_post_meta( $post->ID, '_elementor_edit_mode', true );
+
+        if ( $is_elementor ) {
+            // Post สร้างจาก Elementor → ใช้ theme template ปกติ (Elementor จัดการเอง)
+            return $template;
+        }
+
+        // Post ใหม่ (Gutenberg) → ใช้ template ของเรา
         lfciath_render_single_news_page();
         exit;
     }
@@ -50,23 +61,12 @@ function lfciath_render_single_news_page() {
         $overlay_color = '#C8102E';
     }
 
-    // ตรวจสอบว่าเป็น Elementor post หรือไม่
-    $is_elementor    = get_post_meta( $post->ID, '_elementor_edit_mode', true );
-    $elementor_data  = null;
-
-    // สำหรับข่าวเก่า (Elementor): parse JSON เพื่อดึงข้อความและรูปภาพ
-    if ( $is_elementor && function_exists( 'lfciath_extract_elementor_content' ) ) {
-        $elementor_data = lfciath_extract_elementor_content( $post->ID );
-    }
-
-    // Hero image URL — ลำดับ: ACF → Featured Image → Elementor background/image
+    // Hero image URL
     $hero_url = '';
     if ( $hero_image ) {
         $hero_url = $hero_image['url'];
     } elseif ( has_post_thumbnail( $post->ID ) ) {
         $hero_url = get_the_post_thumbnail_url( $post->ID, 'full' );
-    } elseif ( $elementor_data && ! empty( $elementor_data['first_image'] ) ) {
-        $hero_url = $elementor_data['first_image'];
     }
 
     // หมวดหมู่
@@ -78,14 +78,8 @@ function lfciath_render_single_news_page() {
         $video_embed = '<div class="lfciath-news-video">' . wp_oembed_get( $video_url ) . '</div>';
     }
 
-    // Content — รองรับทั้ง Elementor (ข่าวเก่า) และ Gutenberg (ข่าวใหม่)
-    if ( $elementor_data && ! empty( $elementor_data['html'] ) ) {
-        // ข่าวเก่า: ใช้ content ที่ parse จาก Elementor JSON (ข้อความ + รูปสะอาด)
-        $content = $elementor_data['html'];
-    } else {
-        // ข่าวใหม่: ใช้ WordPress content ปกติ
-        $content = apply_filters( 'the_content', $post->post_content );
-    }
+    // Content
+    $content = apply_filters( 'the_content', $post->post_content );
 
     // CSS
     $css = function_exists( 'lfciath_get_news_css' ) ? lfciath_get_news_css() : '';
