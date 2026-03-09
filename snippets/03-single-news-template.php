@@ -50,12 +50,23 @@ function lfciath_render_single_news_page() {
         $overlay_color = '#C8102E';
     }
 
-    // Hero image URL
+    // ตรวจสอบว่าเป็น Elementor post หรือไม่
+    $is_elementor    = get_post_meta( $post->ID, '_elementor_edit_mode', true );
+    $elementor_data  = null;
+
+    // สำหรับข่าวเก่า (Elementor): parse JSON เพื่อดึงข้อความและรูปภาพ
+    if ( $is_elementor && function_exists( 'lfciath_extract_elementor_content' ) ) {
+        $elementor_data = lfciath_extract_elementor_content( $post->ID );
+    }
+
+    // Hero image URL — ลำดับ: ACF → Featured Image → Elementor background/image
     $hero_url = '';
     if ( $hero_image ) {
         $hero_url = $hero_image['url'];
     } elseif ( has_post_thumbnail( $post->ID ) ) {
         $hero_url = get_the_post_thumbnail_url( $post->ID, 'full' );
+    } elseif ( $elementor_data && ! empty( $elementor_data['first_image'] ) ) {
+        $hero_url = $elementor_data['first_image'];
     }
 
     // หมวดหมู่
@@ -68,10 +79,9 @@ function lfciath_render_single_news_page() {
     }
 
     // Content — รองรับทั้ง Elementor (ข่าวเก่า) และ Gutenberg (ข่าวใหม่)
-    $is_elementor = get_post_meta( $post->ID, '_elementor_edit_mode', true );
-    if ( $is_elementor && class_exists( '\Elementor\Plugin' ) ) {
-        // ข่าวเก่า: ดึง content ที่ render แล้วจาก Elementor (ได้ทั้งข้อความและภาพ)
-        $content = \Elementor\Plugin::instance()->frontend->get_builder_content( $post->ID, true );
+    if ( $elementor_data && ! empty( $elementor_data['html'] ) ) {
+        // ข่าวเก่า: ใช้ content ที่ parse จาก Elementor JSON (ข้อความ + รูปสะอาด)
+        $content = $elementor_data['html'];
     } else {
         // ข่าวใหม่: ใช้ WordPress content ปกติ
         $content = apply_filters( 'the_content', $post->post_content );

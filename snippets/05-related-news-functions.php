@@ -193,3 +193,105 @@ function lfciath_latest_news_shortcode( $atts ) {
     return ob_get_clean();
 }
 add_shortcode( 'lfciath_latest_news', 'lfciath_latest_news_shortcode' );
+
+// ========================================
+// ฟังก์ชัน: ดึงข้อความและรูปภาพจาก Elementor JSON data
+// ใช้สำหรับข่าวเก่าที่สร้างด้วย Elementor ให้แสดงใน template ใหม่ได้
+// ========================================
+function lfciath_extract_elementor_content( $post_id ) {
+    $data = get_post_meta( $post_id, '_elementor_data', true );
+    if ( ! $data ) {
+        return array( 'html' => '', 'first_image' => '' );
+    }
+
+    $elements = json_decode( $data, true );
+    if ( ! is_array( $elements ) ) {
+        return array( 'html' => '', 'first_image' => '' );
+    }
+
+    $html_parts  = array();
+    $first_image = '';
+
+    lfciath_walk_elementor_elements( $elements, $html_parts, $first_image );
+
+    return array(
+        'html'        => implode( "\n", $html_parts ),
+        'first_image' => $first_image,
+    );
+}
+
+/**
+ * Recursive walk ผ่าน Elementor elements เพื่อดึง content
+ * - heading widget → <h2>
+ * - text-editor widget → HTML content
+ * - image widget → <figure><img></figure>
+ * - video widget → oembed
+ * - section/column background image → เก็บเป็น first_image (สำหรับ hero)
+ */
+function lfciath_walk_elementor_elements( $elements, &$html_parts, &$first_image ) {
+    foreach ( $elements as $element ) {
+        $type     = isset( $element['elType'] ) ? $element['elType'] : '';
+        $widget   = isset( $element['widgetType'] ) ? $element['widgetType'] : '';
+        $settings = isset( $element['settings'] ) ? $element['settings'] : array();
+
+        // ดึง background image จาก section/column เป็น hero fallback
+        if ( empty( $first_image ) && in_array( $type, array( 'section', 'container' ), true ) ) {
+            if ( ! empty( $settings['background_image']['url'] ) ) {
+                $first_image = $settings['background_image']['url'];
+            }
+        }
+
+        // ดึง content จาก widget ต่างๆ
+        if ( 'widget' === $type ) {
+            switch ( $widget ) {
+                case 'heading':
+                    if ( ! empty( $settings['title'] ) ) {
+                        $tag = ! empty( $settings['header_size'] ) ? $settings['header_size'] : 'h2';
+                        $allowed_tags = array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' );
+                        if ( ! in_array( $tag, $allowed_tags, true ) ) {
+                            $tag = 'h2';
+                        }
+                        $html_parts[] = '<' . $tag . '>' . wp_kses_post( $settings['title'] ) . '</' . $tag . '>';
+                    }
+                    break;
+
+                case 'text-editor':
+                    if ( ! empty( $settings['editor'] ) ) {
+                        $html_parts[] = wp_kses_post( $settings['editor'] );
+                    }
+                    break;
+
+                case 'image':
+                    if ( ! empty( $settings['image']['url'] ) ) {
+                        $img_url = $settings['image']['url'];
+                        $img_alt = ! empty( $settings['image']['alt'] ) ? $settings['image']['alt'] : '';
+                        // เก็บ first_image ถ้ายังไม่มี
+                        if ( empty( $first_image ) ) {
+                            $first_image = $img_url;
+                        }
+                        $html_parts[] = '<figure class="lfciath-elementor-image"><img src="' . esc_url( $img_url ) . '" alt="' . esc_attr( $img_alt ) . '" loading="lazy" /></figure>';
+                    }
+                    break;
+
+                case 'video':
+                    if ( ! empty( $settings['youtube_url'] ) ) {
+                        $oembed = wp_oembed_get( $settings['youtube_url'] );
+                        if ( $oembed ) {
+                            $html_parts[] = '<div class="lfciath-news-video">' . $oembed . '</div>';
+                        }
+                    } elseif ( ! empty( $settings['vimeo_url'] ) ) {
+                        $oembed = wp_oembed_get( $settings['vimeo_url'] );
+                        if ( $oembed ) {
+                            $html_parts[] = '<div class="lfciath-news-video">' . $oembed . '</div>';
+                        }
+                    }
+                    break;
+            }
+        }
+
+        // Recurse เข้า children
+        if ( ! empty( $element['elements'] ) && is_array( $element['elements'] ) ) {
+            lfciath_walk_elementor_elements( $element['elements'], $html_parts, $first_image );
+        }
+    }
+}
