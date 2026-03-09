@@ -2,58 +2,139 @@
 
 ## Repository Overview
 
-**LFCIATH** — This is a new repository. Update this section with the project's purpose and description as the codebase evolves.
+**LFCIATH** — WordPress News System สำหรับเว็บไซต์ Liverpool FC International Academy Thailand (https://www.lfcacademyth.com/)
+
+ระบบจัดการข่าวสารที่สร้างบน WordPress + Elementor Pro + ACF Pro + Code Snippets ประกอบด้วย Custom Post Type, หมวดหมู่ข่าว, template สำหรับหน้ารายละเอียดข่าวและหน้ารวมข่าว
 
 ## Project Structure
 
-This repository is currently in its initial state. As files and directories are added, document the structure here:
-
 ```
 LFCIATH/
-├── CLAUDE.md          # AI assistant guidelines and project context
-└── (empty)            # Add project files here
+├── CLAUDE.md                              # ไฟล์คู่มือสำหรับ AI assistants
+├── snippets/                              # PHP Snippets (ใช้กับ Code Snippets plugin)
+│   ├── 01-register-news-cpt.php           # Register Custom Post Type + Taxonomy
+│   ├── 02-acf-news-fields.php             # ACF Field Group configuration
+│   ├── 03-single-news-template.php        # Single news page template
+│   ├── 04-archive-news-template.php       # News archive/listing page template
+│   ├── 05-related-news-functions.php      # Related news + shortcodes
+│   ├── 06-enqueue-assets.php              # CSS/JS loading + Breadcrumb + Lightbox
+│   └── 07-admin-columns.php               # Admin UI enhancements + Dashboard widget
+├── assets/
+│   └── css/
+│       └── lfciath-news.css               # Main stylesheet (LFC IA branding)
+└── templates/                             # (reserved for future Elementor templates)
 ```
 
-## Development Setup
+## Tech Stack
 
-<!-- Update with actual setup steps as the project takes shape -->
+| Component | Technology |
+|-----------|-----------|
+| CMS | WordPress |
+| Page Builder | Elementor Pro |
+| Custom Fields | ACF Pro (Advanced Custom Fields) |
+| Snippets | Code Snippets plugin |
+| Fonts | Sarabun (Thai) + Montserrat (English) |
+| Language | PHP 7.4+, CSS3, JavaScript (jQuery) |
 
-1. Clone the repository
-2. Install dependencies (TBD)
-3. Configure environment (TBD)
+## Installation Guide (วิธีติดตั้ง)
 
-## Build & Test Commands
+### Prerequisites
+- WordPress site with Elementor Pro
+- ACF Pro plugin installed & active
+- Code Snippets plugin installed & active
 
-<!-- Fill in as build tooling is added -->
+### Step-by-step
+1. **Snippet 01** (`01-register-news-cpt.php`): คัดลอกลง Code Snippets > สร้าง snippet ใหม่ชื่อ "LFCIATH - Register News CPT" > Activate
+2. **Snippet 02** (`02-acf-news-fields.php`): สร้าง snippet "LFCIATH - ACF News Fields" > Activate
+3. **Snippet 03** (`03-single-news-template.php`): สร้าง snippet "LFCIATH - Single News Template" > Activate
+4. **Snippet 04** (`04-archive-news-template.php`): สร้าง snippet "LFCIATH - News Archive Template" > Activate
+5. **Snippet 05** (`05-related-news-functions.php`): สร้าง snippet "LFCIATH - Related News & Helpers" > Activate
+6. **Snippet 06** (`06-enqueue-assets.php`): สร้าง snippet "LFCIATH - Enqueue News Assets" > Activate
+7. **Snippet 07** (`07-admin-columns.php`): สร้าง snippet "LFCIATH - News Admin Enhancements" > Activate
+8. **CSS** (`assets/css/lfciath-news.css`): คัดลอกเนื้อหาไปวาง Customizer > Additional CSS หรือ Elementor > Site Settings > Custom CSS
+9. **Flush Permalinks**: ไปที่ Settings > Permalinks > กด Save Changes (ไม่ต้องเปลี่ยนอะไร)
 
-- **Build:** TBD
-- **Test (all):** TBD
-- **Test (single):** TBD
-- **Lint:** TBD
-- **Format:** TBD
+## Snippet Order (ลำดับโหลด)
+
+Snippets ต้องทำงานทั้งหมดพร้อมกัน ลำดับไม่สำคัญเพราะใช้ WordPress hooks แต่แนะนำให้ activate ตามลำดับ 01-07
+
+## Custom Post Type
+
+- **Post Type:** `lfciath_news`
+- **URL Pattern:** `/news/{slug}/`
+- **Archive URL:** `/news/`
+- **Taxonomy:** `news_category` (hierarchical)
+
+### Default Categories
+| Slug | ชื่อภาษาไทย |
+|------|-------------|
+| `academy-news` | ข่าวอะคาเดมี |
+| `events` | กิจกรรม/อีเวนต์ |
+| `match-results` | ผลการแข่งขัน |
+| `player-stories` | เรื่องราวนักเรียน |
+| `announcements` | ประกาศ |
+| `partnerships` | พาร์ทเนอร์ชิป |
+
+## ACF Fields
+
+| Field Name | Type | Description |
+|------------|------|-------------|
+| `news_subtitle` | Text | คำบรรยายรองใต้หัวข้อ |
+| `news_hero_image` | Image | ภาพ Hero Banner (1920x600px) |
+| `news_display_date` | Date Picker | วันที่แสดง (fallback: publish date) |
+| `news_author_display` | Text | ชื่อผู้เขียน (default: "LFCIATH") |
+| `news_gallery` | Gallery | แกลเลอรีรูปภาพ (max 30) |
+| `news_hero_overlay_color` | Color Picker | สี overlay (default: #C8102E) |
+| `news_is_featured` | True/False | ข่าวเด่น |
+| `news_video_url` | URL | ลิงก์วิดีโอ YouTube/Vimeo |
+| `news_video_position` | Select | ตำแหน่งวิดีโอ |
+
+## Available Shortcodes
+
+```
+[lfciath_news_archive posts_per_page="9" category="" columns="3" show_filter="yes" show_featured="yes"]
+[lfciath_latest_news count="3" category="academy-news" columns="3"]
+```
+
+## Branding Colors
+
+| Name | Hex | Usage |
+|------|-----|-------|
+| LFC Red | `#C8102E` | Primary, buttons, accents |
+| LFC Red Dark | `#A50D22` | Hover states |
+| Black | `#1A1A1A` | Headings |
+| Gray Dark | `#333333` | Body text |
+| Gray Mid | `#666666` | Secondary text |
+| Gray Light | `#F5F5F5` | Backgrounds |
+
+## Design Reference
+
+Single news page layout (top to bottom):
+1. **Hero Banner** — full-width image with red gradient overlay, title, subtitle
+2. **Meta bar** — date, author, category badges, social share buttons
+3. **Article body** — long-form content (WordPress editor)
+4. **Video embed** — optional YouTube/Vimeo
+5. **Image gallery** — 4-column grid with lightbox
+6. **CTA section** — Line ID contact info
+7. **Related news** — 3-column card grid with "ดูข่าวทั้งหมด" button
 
 ## Code Conventions
 
-- Write clear, descriptive commit messages
-- Keep changes focused and atomic
-- Follow the project's established patterns as they emerge
-- Prefer editing existing files over creating new ones
-
-## Git Workflow
-
-- **Default branch:** `main` (to be created with the first commit)
-- Use feature branches for new work
-- Write meaningful commit messages that explain *why*, not just *what*
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `CLAUDE.md` | AI assistant context and project guidelines |
+- Prefix all functions with `lfciath_`
+- Prefix all CSS classes with `lfciath-`
+- Use WordPress coding standards for PHP
+- All user-facing text in Thai
+- Admin labels in Thai
+- Comments in code may be Thai or English
+- Use `esc_html()`, `esc_url()`, `esc_attr()` for output escaping
+- Use `sanitize_text_field()`, `wp_unslash()` for input sanitization
 
 ## Notes for AI Assistants
 
-- Read relevant files before making changes
-- Do not introduce unnecessary dependencies or abstractions
-- Keep solutions simple and focused on the task at hand
-- Update this CLAUDE.md file when significant project structure or workflow changes occur
+- This is a WordPress-based project; all code runs as PHP snippets via Code Snippets plugin
+- Do not create standalone PHP files that need direct URL access
+- Test any new snippet by checking it doesn't produce PHP fatal errors
+- The site uses Elementor Pro — shortcodes can be placed in Elementor text widgets
+- ACF Pro is required; do not use free ACF functions that don't exist in Pro
+- Always escape output and sanitize input
+- Keep CSS scoped with `lfciath-` prefix to avoid conflicts with theme/Elementor styles

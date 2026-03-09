@@ -1,0 +1,209 @@
+<?php
+/**
+ * ============================================================
+ * SNIPPET 3: Single News Template (หน้ารายละเอียดข่าว)
+ * ============================================================
+ * วิธีใช้: คัดลอกโค้ดนี้ไปวางใน Code Snippets plugin
+ * ชื่อ Snippet: "LFCIATH - Single News Template"
+ * ============================================================
+ * Template จะถูกโหลดอัตโนมัติเมื่อเปิดหน้าข่าวเดี่ยว
+ * URL: /news/ชื่อ-ข่าว/
+ * ============================================================
+ */
+
+// Override single template for news CPT
+function lfciath_news_single_template( $template ) {
+    if ( is_singular( 'lfciath_news' ) ) {
+        // ตรวจสอบว่ามี template ใน theme ก่อน
+        $theme_template = locate_template( 'single-lfciath_news.php' );
+        if ( $theme_template ) {
+            return $theme_template;
+        }
+        // ใช้ template จาก snippet แทน (render ผ่าน buffer)
+        add_filter( 'the_content', 'lfciath_render_single_news', 99 );
+    }
+    return $template;
+}
+add_filter( 'single_template', 'lfciath_news_single_template' );
+
+// Render single news content
+function lfciath_render_single_news( $content ) {
+    if ( ! is_singular( 'lfciath_news' ) ) {
+        return $content;
+    }
+
+    // ลบ filter เพื่อไม่ให้วนซ้ำ
+    remove_filter( 'the_content', 'lfciath_render_single_news', 99 );
+
+    global $post;
+
+    // ดึงข้อมูล ACF
+    $subtitle       = get_field( 'news_subtitle', $post->ID );
+    $hero_image     = get_field( 'news_hero_image', $post->ID );
+    $display_date   = get_field( 'news_display_date', $post->ID );
+    $author_display = get_field( 'news_author_display', $post->ID );
+    $overlay_color  = get_field( 'news_hero_overlay_color', $post->ID );
+    $gallery        = get_field( 'news_gallery', $post->ID );
+    $video_url      = get_field( 'news_video_url', $post->ID );
+    $video_position = get_field( 'news_video_position', $post->ID );
+
+    // Fallbacks
+    if ( ! $display_date ) {
+        $display_date = get_the_date( 'd/m/y', $post->ID );
+    }
+    if ( ! $author_display ) {
+        $author_display = 'LFCIATH';
+    }
+    if ( ! $overlay_color ) {
+        $overlay_color = '#C8102E';
+    }
+
+    // Hero image URL
+    $hero_url = '';
+    if ( $hero_image ) {
+        $hero_url = $hero_image['url'];
+    } elseif ( has_post_thumbnail( $post->ID ) ) {
+        $hero_url = get_the_post_thumbnail_url( $post->ID, 'full' );
+    }
+
+    // หมวดหมู่
+    $categories = get_the_terms( $post->ID, 'news_category' );
+
+    // Video embed
+    $video_embed = '';
+    if ( $video_url ) {
+        $video_embed = '<div class="lfciath-news-video">' . wp_oembed_get( $video_url ) . '</div>';
+    }
+
+    // เริ่ม output
+    ob_start();
+    ?>
+
+    <div class="lfciath-single-news">
+
+        <!-- Hero Banner -->
+        <?php if ( $hero_url ) : ?>
+        <div class="lfciath-news-hero" style="background-image: url('<?php echo esc_url( $hero_url ); ?>');">
+            <div class="lfciath-news-hero-overlay" style="background-color: <?php echo esc_attr( $overlay_color ); ?>;">
+                <div class="lfciath-news-hero-content">
+                    <h1 class="lfciath-news-title"><?php echo esc_html( get_the_title() ); ?></h1>
+                    <?php if ( $subtitle ) : ?>
+                        <p class="lfciath-news-subtitle"><?php echo esc_html( $subtitle ); ?></p>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+        <?php else : ?>
+        <div class="lfciath-news-hero-simple" style="background-color: <?php echo esc_attr( $overlay_color ); ?>;">
+            <div class="lfciath-news-hero-content">
+                <h1 class="lfciath-news-title"><?php echo esc_html( get_the_title() ); ?></h1>
+                <?php if ( $subtitle ) : ?>
+                    <p class="lfciath-news-subtitle"><?php echo esc_html( $subtitle ); ?></p>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- Meta Info & Social Share -->
+        <div class="lfciath-news-meta-wrapper">
+            <div class="lfciath-news-meta">
+                <span class="lfciath-news-date">ตีพิมพ์ <?php echo esc_html( $display_date ); ?></span>
+                <span class="lfciath-news-author">โดย <?php echo esc_html( $author_display ); ?></span>
+            </div>
+
+            <!-- Categories -->
+            <?php if ( $categories && ! is_wp_error( $categories ) ) : ?>
+            <div class="lfciath-news-categories">
+                <?php foreach ( $categories as $cat ) : ?>
+                    <a href="<?php echo esc_url( get_term_link( $cat ) ); ?>" class="lfciath-news-cat-badge">
+                        <?php echo esc_html( $cat->name ); ?>
+                    </a>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
+
+            <!-- Social Share -->
+            <div class="lfciath-news-share">
+                <?php
+                $share_url   = rawurlencode( get_permalink() );
+                $share_title = rawurlencode( get_the_title() );
+                ?>
+                <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo $share_url; ?>"
+                   target="_blank" rel="noopener" class="lfciath-share-btn lfciath-share-facebook"
+                   aria-label="Share on Facebook">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                </a>
+                <a href="https://twitter.com/intent/tweet?url=<?php echo $share_url; ?>&text=<?php echo $share_title; ?>"
+                   target="_blank" rel="noopener" class="lfciath-share-btn lfciath-share-x"
+                   aria-label="Share on X">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </a>
+                <a href="mailto:?subject=<?php echo $share_title; ?>&body=<?php echo $share_url; ?>"
+                   class="lfciath-share-btn lfciath-share-email"
+                   aria-label="Share via Email">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                </a>
+                <a href="https://api.whatsapp.com/send?text=<?php echo $share_title . '%20' . $share_url; ?>"
+                   target="_blank" rel="noopener" class="lfciath-share-btn lfciath-share-whatsapp"
+                   aria-label="Share on WhatsApp">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                </a>
+                <a href="https://www.linkedin.com/shareArticle?mini=true&url=<?php echo $share_url; ?>&title=<?php echo $share_title; ?>"
+                   target="_blank" rel="noopener" class="lfciath-share-btn lfciath-share-linkedin"
+                   aria-label="Share on LinkedIn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                </a>
+                <a href="https://t.me/share/url?url=<?php echo $share_url; ?>&text=<?php echo $share_title; ?>"
+                   target="_blank" rel="noopener" class="lfciath-share-btn lfciath-share-telegram"
+                   aria-label="Share on Telegram">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- Article Content -->
+        <div class="lfciath-news-content">
+            <?php if ( $video_url && $video_position === 'before_content' ) echo $video_embed; ?>
+
+            <div class="lfciath-news-body">
+                <?php echo $content; ?>
+            </div>
+
+            <?php if ( $video_url && $video_position === 'after_content' ) echo $video_embed; ?>
+        </div>
+
+        <!-- Gallery -->
+        <?php if ( $video_url && $video_position === 'before_gallery' ) echo $video_embed; ?>
+
+        <?php if ( $gallery ) : ?>
+        <div class="lfciath-news-gallery">
+            <div class="lfciath-news-gallery-grid">
+                <?php foreach ( $gallery as $image ) : ?>
+                    <a href="<?php echo esc_url( $image['url'] ); ?>"
+                       class="lfciath-gallery-item"
+                       data-lightbox="news-gallery"
+                       data-title="<?php echo esc_attr( $image['caption'] ); ?>">
+                        <img src="<?php echo esc_url( $image['sizes']['medium_large'] ?? $image['url'] ); ?>"
+                             alt="<?php echo esc_attr( $image['alt'] ); ?>"
+                             loading="lazy" />
+                    </a>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <!-- CTA / Follow Section -->
+        <div class="lfciath-news-cta">
+            <p>ผู้สนใจสามารถติดตามข่าวสารและสมัครเข้าร่วมโครงการต่างๆ<br>
+            ของ Liverpool FC International Academy Thailand<br>
+            ได้ที่ Line ID: <strong>@LFCIATH</strong></p>
+        </div>
+
+        <!-- Related News -->
+        <?php echo lfciath_get_related_news( $post->ID ); ?>
+
+    </div>
+
+    <?php
+    return ob_get_clean();
+}
