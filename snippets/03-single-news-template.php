@@ -15,8 +15,20 @@
  */
 
 // Override single template — render full page with header/footer
+// ถ้า post สร้างจาก Elementor → ข้าม ให้ Elementor render เอง (ป้องกัน header ซ้อน)
 function lfciath_news_single_template( $template ) {
     if ( is_singular( 'lfciath_news' ) ) {
+        global $post;
+
+        // ตรวจสอบว่า post นี้สร้างด้วย Elementor หรือไม่
+        $is_elementor = get_post_meta( $post->ID, '_elementor_edit_mode', true );
+
+        if ( $is_elementor ) {
+            // Post สร้างจาก Elementor → ใช้ theme template ปกติ (Elementor จัดการเอง)
+            return $template;
+        }
+
+        // Post ใหม่ (Gutenberg) → ใช้ template ของเรา
         lfciath_render_single_news_page();
         exit;
     }
