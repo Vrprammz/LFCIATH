@@ -32,9 +32,35 @@ function lfciath_enqueue_news_assets() {
         wp_add_inline_style( 'lfciath-news-inline', lfciath_get_news_css() );
     }
 
-    // โหลด Lightbox สำหรับ Gallery (ใช้ WP built-in)
+    // โหลด jQuery สำหรับ header scroll + lightbox
+    wp_enqueue_script( 'jquery' );
+
+    // Header scroll + hamburger JS
+    wp_add_inline_script( 'jquery', '
+        jQuery(document).ready(function($) {
+            var header = $("#lfciath-site-header");
+            if (header.length) {
+                $(window).on("scroll", function() {
+                    if ($(this).scrollTop() > 50) {
+                        header.addClass("scrolled");
+                    } else {
+                        header.removeClass("scrolled");
+                    }
+                });
+                // trigger on load
+                if ($(window).scrollTop() > 50) header.addClass("scrolled");
+
+                // Hamburger toggle
+                $("#lfciath-hamburger").on("click", function() {
+                    $(this).toggleClass("active");
+                    $("#lfciath-header-nav").toggleClass("active");
+                });
+            }
+        });
+    ' );
+
+    // โหลด Lightbox สำหรับ Gallery
     if ( is_singular( 'lfciath_news' ) ) {
-        wp_enqueue_script( 'jquery' );
 
         // Simple lightbox script
         wp_add_inline_script( 'jquery', '
@@ -199,6 +225,82 @@ function lfciath_add_btn_style() {
 add_action( 'wp_head', 'lfciath_add_btn_style' );
 
 // ========================================
+// Site Header สำหรับหน้าข่าว (เหมือน Elementor header ของเว็บ)
+// ========================================
+function lfciath_render_site_header() {
+    // Logo URL — ใช้ไฟล์ที่อัปโหลดไว้แล้ว
+    $logo_url = 'https://www.lfcacademyth.com/wp-content/uploads/2024/05/logo.png';
+
+    $home = esc_url( home_url( '/' ) );
+
+    // เมนูหลัก — ตรงกับที่ใช้ใน Elementor (URL จริงจากเว็บ)
+    $menu_items = array(
+        'HOME'           => 'https://www.lfcacademyth.com/',
+        'COURSES'        => 'https://www.lfcacademyth.com/courses-2/',
+        'ABOUT'          => 'https://www.lfcacademyth.com/about/',
+        'PARTNERS'       => 'https://www.lfcacademyth.com/partners/',
+        'EVENTS'         => 'https://www.lfcacademyth.com/events/',
+        'CONTACT'        => 'https://www.lfcacademyth.com/contact/',
+        'FAQ'            => 'https://www.lfcacademyth.com/faq/',
+        'LOGIN/REGISTER' => 'https://register.lfcacademyth.com/',
+    );
+
+    // อนุญาตให้ปรับเมนูผ่าน filter
+    $menu_items = apply_filters( 'lfciath_header_menu_items', $menu_items );
+    ?>
+    <header class="lfciath-site-header" id="lfciath-site-header">
+        <div class="lfciath-header-inner">
+            <a href="<?php echo $home; ?>" class="lfciath-header-logo">
+                <?php if ( $logo_url ) : ?>
+                    <img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" class="lfciath-header-logo-img" />
+                <?php else : ?>
+                    <span class="lfciath-header-logo-text">LFC IA</span>
+                <?php endif; ?>
+            </a>
+
+            <!-- Hamburger (mobile) -->
+            <button class="lfciath-header-hamburger" id="lfciath-hamburger" aria-label="เปิดเมนู">
+                <span></span><span></span><span></span>
+            </button>
+
+            <nav class="lfciath-header-nav" id="lfciath-header-nav">
+                <?php foreach ( $menu_items as $label => $url ) : ?>
+                    <a href="<?php echo esc_url( $url ); ?>" class="lfciath-header-nav-link"><?php echo esc_html( $label ); ?></a>
+                <?php endforeach; ?>
+            </nav>
+        </div>
+    </header>
+    <?php
+}
+
+// ========================================
+// Site Footer สำหรับหน้าข่าว
+// ========================================
+function lfciath_render_site_footer() {
+    $home = esc_url( home_url( '/' ) );
+    ?>
+    <footer class="lfciath-site-footer">
+        <div class="lfciath-footer-links">
+            <a href="<?php echo $home; ?>privacy-policy/">PRIVACY POLICY</a>
+            <span>/</span>
+            <a href="<?php echo $home; ?>terms-and-conditions/">TERMS AND CONDITIONS</a>
+            <span>/</span>
+            <a href="<?php echo $home; ?>safeguard/">SAFEGUARD</a>
+        </div>
+        <div class="lfciath-footer-social">
+            <a href="https://www.facebook.com/LFCIAThailand" target="_blank" rel="noopener" aria-label="Facebook">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+            </a>
+            <a href="https://www.instagram.com/lfciathailand/" target="_blank" rel="noopener" aria-label="Instagram">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+            </a>
+        </div>
+        <p class="lfciath-footer-copyright">&copy; <?php echo esc_html( date( 'Y' ) ); ?> LIVERPOOL FC INTERNATIONAL ACADEMY THAILAND. ALL RIGHTS RESERVED.</p>
+    </footer>
+    <?php
+}
+
+// ========================================
 // CSS หลักทั้งหมด (โหลดอัตโนมัติ ไม่ต้องก๊อปไปวางเอง)
 // ========================================
 function lfciath_get_news_css() {
@@ -218,6 +320,88 @@ function lfciath_get_news_css() {
     --lfc-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     --lfc-shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.15);
     --lfc-transition: all 0.3s ease;
+}
+
+/* SITE HEADER — Sticky, Red→White on scroll */
+.lfciath-site-header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+    background: #C8102E; transition: all 0.35s ease;
+}
+.lfciath-site-header.scrolled {
+    background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+}
+.lfciath-header-inner {
+    max-width: 1600px; margin: 0 auto; padding: 0 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 70px;
+}
+.lfciath-header-logo { display: flex; align-items: center; text-decoration: none; }
+.lfciath-header-logo-img { height: 50px; width: auto; }
+.lfciath-header-logo-text {
+    font-family: "Georgia", "Times New Roman", serif;
+    font-size: 26px; font-weight: 700; font-style: italic;
+    color: #fff; text-decoration: none; letter-spacing: 1px;
+}
+.lfciath-site-header.scrolled .lfciath-header-logo-text { color: #C8102E; }
+.lfciath-header-nav {
+    display: flex; align-items: center; gap: 8px;
+}
+.lfciath-header-nav-link {
+    font-family: var(--lfc-font-en, "Montserrat", sans-serif);
+    font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+    color: #fff; text-decoration: none; padding: 8px 14px;
+    transition: all 0.3s ease; white-space: nowrap;
+}
+.lfciath-header-nav-link:hover { color: rgba(255,255,255,0.7); text-decoration: none; }
+.lfciath-site-header.scrolled .lfciath-header-nav-link { color: #1A1A1A; }
+.lfciath-site-header.scrolled .lfciath-header-nav-link:hover { color: #C8102E; }
+
+/* Hamburger mobile */
+.lfciath-header-hamburger {
+    display: none; background: none; border: none; cursor: pointer;
+    padding: 8px; flex-direction: column; gap: 5px;
+}
+.lfciath-header-hamburger span {
+    display: block; width: 24px; height: 2px; background: #fff; transition: all 0.3s ease;
+}
+.lfciath-site-header.scrolled .lfciath-header-hamburger span { background: #1A1A1A; }
+.lfciath-header-hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+.lfciath-header-hamburger.active span:nth-child(2) { opacity: 0; }
+.lfciath-header-hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+/* Body padding for fixed header */
+.lfciath-has-header { padding-top: 70px; }
+
+/* SITE FOOTER */
+.lfciath-site-footer {
+    background: #1A1A1A; color: #999; text-align: center; padding: 40px 5% 30px;
+    font-family: var(--lfc-font-en, "Montserrat", sans-serif);
+}
+.lfciath-footer-links { margin-bottom: 20px; font-size: 12px; letter-spacing: 1px; }
+.lfciath-footer-links a { color: #999; text-decoration: none; transition: color 0.3s; }
+.lfciath-footer-links a:hover { color: #fff; }
+.lfciath-footer-links span { margin: 0 8px; color: #555; }
+.lfciath-footer-social { display: flex; justify-content: center; gap: 16px; margin-bottom: 20px; }
+.lfciath-footer-social a {
+    display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; border-radius: 50%; background: #333;
+    color: #fff; transition: all 0.3s ease;
+}
+.lfciath-footer-social a:hover { background: #C8102E; }
+.lfciath-footer-copyright { font-size: 12px; color: #666; margin: 0; }
+
+/* HEADER RESPONSIVE */
+@media (max-width: 960px) {
+    .lfciath-header-hamburger { display: flex; }
+    .lfciath-header-nav {
+        display: none; position: absolute; top: 70px; left: 0; right: 0;
+        background: #C8102E; flex-direction: column; padding: 16px 0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .lfciath-site-header.scrolled .lfciath-header-nav { background: #fff; }
+    .lfciath-header-nav.active { display: flex; }
+    .lfciath-header-nav-link { padding: 12px 40px; font-size: 14px; }
+    .lfciath-header-inner { padding: 0 20px; }
 }
 
 /* SINGLE NEWS - Hero Banner */

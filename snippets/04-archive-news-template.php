@@ -13,19 +13,18 @@
  * ============================================================
  */
 
-// Override archive template ด้วย template_include
-// ใช้ get_header() / get_footer() เพื่อโหลด Elementor Pro header/footer
+// Override archive template — render full page พร้อม header/footer ของเรา
 function lfciath_news_archive_template( $template ) {
     if ( is_post_type_archive( 'lfciath_news' ) || is_tax( 'news_category' ) ) {
-        lfciath_render_archive_with_theme();
+        lfciath_render_full_archive_page();
         exit;
     }
     return $template;
 }
 add_filter( 'template_include', 'lfciath_news_archive_template' );
 
-// Render หน้า archive โดยใช้ header/footer ของ theme (Elementor Pro)
-function lfciath_render_archive_with_theme() {
+// Render หน้า archive แบบเต็มพร้อม header/footer
+function lfciath_render_full_archive_page() {
     $archive_html = lfciath_build_news_archive( array(
         'posts_per_page' => 9,
         'category'       => '',
@@ -34,8 +33,23 @@ function lfciath_render_archive_with_theme() {
         'show_featured'  => 'yes',
     ));
 
-    // โหลด Elementor Pro header
-    get_header();
+    $css = function_exists( 'lfciath_get_news_css' ) ? lfciath_get_news_css() : '';
+
+    ?><!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo( 'charset' ); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ข่าวสารและกิจกรรม - <?php bloginfo( 'name' ); ?></title>
+    <?php wp_head(); ?>
+    <style><?php echo $css; ?></style>
+</head>
+<body <?php body_class( 'lfciath-has-header' ); ?>>
+
+    <?php
+    if ( function_exists( 'lfciath_render_site_header' ) ) {
+        lfciath_render_site_header();
+    }
     ?>
 
     <div class="lfciath-archive-page" style="min-height: 60vh; background: #fff;">
@@ -43,8 +57,15 @@ function lfciath_render_archive_with_theme() {
     </div>
 
     <?php
-    // โหลด Elementor Pro footer
-    get_footer();
+    if ( function_exists( 'lfciath_render_site_footer' ) ) {
+        lfciath_render_site_footer();
+    }
+
+    wp_footer();
+    ?>
+</body>
+</html>
+    <?php
 }
 
 // Shortcode สำหรับแสดงหน้ารวมข่าว (ใช้ใน Elementor ได้)

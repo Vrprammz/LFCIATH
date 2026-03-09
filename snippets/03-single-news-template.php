@@ -9,32 +9,23 @@
  * Template จะถูกโหลดอัตโนมัติเมื่อเปิดหน้าข่าวเดี่ยว
  * URL: /news/ชื่อ-ข่าว/
  * ============================================================
+ * ใช้ template_include + render full page พร้อม header/footer
+ * เพื่อให้ทำงานได้กับทุก theme รวม Elementor Pro
+ * ============================================================
  */
 
-// Override single template for news CPT
+// Override single template — render full page with header/footer
 function lfciath_news_single_template( $template ) {
     if ( is_singular( 'lfciath_news' ) ) {
-        // ตรวจสอบว่ามี template ใน theme ก่อน
-        $theme_template = locate_template( 'single-lfciath_news.php' );
-        if ( $theme_template ) {
-            return $theme_template;
-        }
-        // ใช้ template จาก snippet แทน (render ผ่าน buffer)
-        add_filter( 'the_content', 'lfciath_render_single_news', 99 );
+        lfciath_render_single_news_page();
+        exit;
     }
     return $template;
 }
-add_filter( 'single_template', 'lfciath_news_single_template' );
+add_filter( 'template_include', 'lfciath_news_single_template' );
 
-// Render single news content
-function lfciath_render_single_news( $content ) {
-    if ( ! is_singular( 'lfciath_news' ) ) {
-        return $content;
-    }
-
-    // ลบ filter เพื่อไม่ให้วนซ้ำ
-    remove_filter( 'the_content', 'lfciath_render_single_news', 99 );
-
+// Render single news page แบบเต็ม
+function lfciath_render_single_news_page() {
     global $post;
 
     // ดึงข้อมูล ACF
@@ -75,8 +66,28 @@ function lfciath_render_single_news( $content ) {
         $video_embed = '<div class="lfciath-news-video">' . wp_oembed_get( $video_url ) . '</div>';
     }
 
-    // เริ่ม output
-    ob_start();
+    // Content
+    $content = apply_filters( 'the_content', $post->post_content );
+
+    // CSS
+    $css = function_exists( 'lfciath_get_news_css' ) ? lfciath_get_news_css() : '';
+
+    ?><!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo( 'charset' ); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo esc_html( get_the_title() ); ?> - <?php bloginfo( 'name' ); ?></title>
+    <?php wp_head(); ?>
+    <style><?php echo $css; ?></style>
+</head>
+<body <?php body_class( 'lfciath-has-header' ); ?>>
+
+    <?php
+    // โหลด Header
+    if ( function_exists( 'lfciath_render_site_header' ) ) {
+        lfciath_render_site_header();
+    }
     ?>
 
     <div class="lfciath-single-news">
@@ -200,10 +211,23 @@ function lfciath_render_single_news( $content ) {
         </div>
 
         <!-- Related News -->
-        <?php echo lfciath_get_related_news( $post->ID ); ?>
+        <?php
+        if ( function_exists( 'lfciath_get_related_news' ) ) {
+            echo lfciath_get_related_news( $post->ID );
+        }
+        ?>
 
     </div>
 
     <?php
-    return ob_get_clean();
+    // โหลด Footer
+    if ( function_exists( 'lfciath_render_site_footer' ) ) {
+        lfciath_render_site_footer();
+    }
+
+    wp_footer();
+    ?>
+</body>
+</html>
+    <?php
 }
