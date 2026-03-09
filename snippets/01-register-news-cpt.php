@@ -110,20 +110,32 @@ function lfciath_create_default_news_categories() {
 }
 add_action( 'init', 'lfciath_create_default_news_categories' );
 
-// ป้องกัน WordPress redirect /news/ ไปหา post อื่นที่ slug คล้ายกัน
-function lfciath_prevent_news_archive_redirect( $redirect_url ) {
+// ป้องกัน WordPress "guess permalink" redirect /news/ ไปหา post อื่น
+function lfciath_prevent_news_guess_redirect( $redirect_url ) {
+    // บล็อก redirect บน /news/ archive
     if ( is_post_type_archive( 'lfciath_news' ) || is_tax( 'news_category' ) ) {
         return false;
     }
     return $redirect_url;
 }
-add_filter( 'redirect_canonical', 'lfciath_prevent_news_archive_redirect' );
+add_filter( 'redirect_canonical', 'lfciath_prevent_news_guess_redirect' );
 
-// Flush rewrite rules on activation
-function lfciath_flush_rewrite_rules() {
-    lfciath_register_news_cpt();
-    lfciath_register_news_taxonomy();
-    flush_rewrite_rules();
+// ปิด "guess permalink" redirect สำหรับ /news/ (WordPress 5.5+)
+function lfciath_disable_guess_redirect( $do_redirect ) {
+    // ตรวจสอบว่า request URL คือ /news/ หรือไม่
+    $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+    if ( preg_match( '#^/news/?(\?.*)?$#', $request_uri ) ) {
+        return false;
+    }
+    return $do_redirect;
 }
-// เรียกใช้ครั้งเดียว: uncomment บรรทัดด้านล่าง แล้ว comment กลับหลัง save
-// add_action( 'init', 'lfciath_flush_rewrite_rules', 99 );
+add_filter( 'do_redirect_guess_404_permalink', 'lfciath_disable_guess_redirect' );
+
+// Auto-flush rewrite rules ถ้ายังไม่มี rule สำหรับ news
+function lfciath_maybe_flush_rewrite_rules() {
+    $rules = get_option( 'rewrite_rules' );
+    if ( ! isset( $rules['news/?$'] ) ) {
+        flush_rewrite_rules( false );
+    }
+}
+add_action( 'init', 'lfciath_maybe_flush_rewrite_rules', 99 );
