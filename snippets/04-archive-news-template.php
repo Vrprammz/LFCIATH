@@ -9,16 +9,98 @@
  * แสดงหน้ารวมข่าวพร้อมกรองหมวดหมู่
  * URL: /news/
  * ============================================================
+ * ใช้ template_include เพื่อ render หน้าเต็ม (ทำงานกับทุก theme รวม Elementor Pro)
+ * ============================================================
  */
 
-// Override archive template
+// Override archive template ด้วย template_include (เสถียรกว่า archive_template)
 function lfciath_news_archive_template( $template ) {
     if ( is_post_type_archive( 'lfciath_news' ) || is_tax( 'news_category' ) ) {
-        add_filter( 'the_content', 'lfciath_render_news_archive', 99 );
+        // Render หน้าเต็มเอง
+        lfciath_render_full_archive_page();
+        exit;
     }
     return $template;
 }
-add_filter( 'archive_template', 'lfciath_news_archive_template' );
+add_filter( 'template_include', 'lfciath_news_archive_template' );
+
+// Render หน้า archive แบบเต็ม (ไม่พึ่ง theme template)
+function lfciath_render_full_archive_page() {
+    $archive_html = lfciath_build_news_archive( array(
+        'posts_per_page' => 9,
+        'category'       => '',
+        'columns'        => 3,
+        'show_filter'    => 'yes',
+        'show_featured'  => 'yes',
+    ));
+
+    // ดึง CSS & Fonts
+    $css = function_exists( 'lfciath_get_news_css' ) ? lfciath_get_news_css() : '';
+
+    ?><!DOCTYPE html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo( 'charset' ); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ข่าวสารและกิจกรรม - <?php bloginfo( 'name' ); ?></title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <?php wp_head(); ?>
+    <style>
+        <?php echo $css; ?>
+        .lfciath-btn-all-news {
+            display: inline-block;
+            padding: 12px 32px;
+            background: var(--lfc-red, #C8102E);
+            color: #fff !important;
+            border-radius: 30px;
+            font-family: "Sarabun", sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none !important;
+            transition: all 0.3s ease;
+        }
+        .lfciath-btn-all-news:hover {
+            background: var(--lfc-red-dark, #A50D22);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(200, 16, 46, 0.3);
+        }
+        /* ซ่อน theme header/footer ถ้าซ้ำ */
+        .lfciath-archive-page { min-height: 100vh; background: #fff; }
+        .lfciath-archive-nav { max-width: 1200px; margin: 0 auto; padding: 20px 5%; display: flex; align-items: center; justify-content: space-between; }
+        .lfciath-archive-nav a { text-decoration: none; color: #333; font-family: "Sarabun", sans-serif; font-weight: 600; }
+        .lfciath-archive-nav .lfciath-nav-logo { font-size: 18px; color: #C8102E; }
+        .lfciath-archive-nav .lfciath-nav-home { font-size: 14px; padding: 8px 20px; border: 2px solid #C8102E; border-radius: 30px; color: #C8102E; transition: all 0.3s ease; }
+        .lfciath-archive-nav .lfciath-nav-home:hover { background: #C8102E; color: #fff; }
+        .lfciath-archive-footer { text-align: center; padding: 30px 5%; font-family: "Sarabun", sans-serif; font-size: 13px; color: #999; border-top: 1px solid #eee; margin-top: 40px; }
+    </style>
+</head>
+<body <?php body_class( 'lfciath-archive-page' ); ?>>
+
+    <!-- Navigation -->
+    <nav class="lfciath-archive-nav">
+        <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="lfciath-nav-logo">
+            LFC IA Thailand
+        </a>
+        <a href="<?php echo esc_url( home_url( '/' ) ); ?>" class="lfciath-nav-home">
+            &larr; กลับหน้าแรก
+        </a>
+    </nav>
+
+    <!-- Archive Content -->
+    <?php echo $archive_html; ?>
+
+    <!-- Footer -->
+    <footer class="lfciath-archive-footer">
+        <p>&copy; <?php echo esc_html( date( 'Y' ) ); ?> Liverpool FC International Academy Thailand. All rights reserved.</p>
+    </footer>
+
+    <?php wp_footer(); ?>
+</body>
+</html>
+    <?php
+}
 
 // Shortcode สำหรับแสดงหน้ารวมข่าว (ใช้ใน Elementor ได้)
 // Usage: [lfciath_news_archive posts_per_page="9" category=""]
@@ -226,21 +308,6 @@ function lfciath_build_news_archive( $atts ) {
 
     <?php
     return ob_get_clean();
-}
-
-// Render archive via content filter
-function lfciath_render_news_archive( $content ) {
-    if ( ! is_post_type_archive( 'lfciath_news' ) && ! is_tax( 'news_category' ) ) {
-        return $content;
-    }
-    remove_filter( 'the_content', 'lfciath_render_news_archive', 99 );
-    return lfciath_build_news_archive( array(
-        'posts_per_page' => 9,
-        'category'       => '',
-        'columns'        => 3,
-        'show_filter'    => 'yes',
-        'show_featured'  => 'yes',
-    ));
 }
 
 // ปรับ posts per page สำหรับ archive
