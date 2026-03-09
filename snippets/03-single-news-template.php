@@ -15,20 +15,9 @@
  */
 
 // Override single template — render full page with header/footer
-// ถ้า post สร้างจาก Elementor → ข้าม ให้ Elementor render เอง (ป้องกัน header ซ้อน)
+// ใช้ template เดียวกันสำหรับทุก post (ทั้ง Elementor และ Gutenberg) เพื่อ UI ที่เป็นเอกภาพ
 function lfciath_news_single_template( $template ) {
     if ( is_singular( 'lfciath_news' ) ) {
-        global $post;
-
-        // ตรวจสอบว่า post นี้สร้างด้วย Elementor หรือไม่
-        $is_elementor = get_post_meta( $post->ID, '_elementor_edit_mode', true );
-
-        if ( $is_elementor ) {
-            // Post สร้างจาก Elementor → ใช้ theme template ปกติ (Elementor จัดการเอง)
-            return $template;
-        }
-
-        // Post ใหม่ (Gutenberg) → ใช้ template ของเรา
         lfciath_render_single_news_page();
         exit;
     }
@@ -78,8 +67,15 @@ function lfciath_render_single_news_page() {
         $video_embed = '<div class="lfciath-news-video">' . wp_oembed_get( $video_url ) . '</div>';
     }
 
-    // Content
-    $content = apply_filters( 'the_content', $post->post_content );
+    // Content — รองรับทั้ง Elementor (ข่าวเก่า) และ Gutenberg (ข่าวใหม่)
+    $is_elementor = get_post_meta( $post->ID, '_elementor_edit_mode', true );
+    if ( $is_elementor && class_exists( '\Elementor\Plugin' ) ) {
+        // ข่าวเก่า: ดึง content ที่ render แล้วจาก Elementor (ได้ทั้งข้อความและภาพ)
+        $content = \Elementor\Plugin::instance()->frontend->get_builder_content( $post->ID, true );
+    } else {
+        // ข่าวใหม่: ใช้ WordPress content ปกติ
+        $content = apply_filters( 'the_content', $post->post_content );
+    }
 
     // CSS
     $css = function_exists( 'lfciath_get_news_css' ) ? lfciath_get_news_css() : '';
