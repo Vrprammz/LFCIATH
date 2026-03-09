@@ -110,6 +110,15 @@ function lfciath_create_default_news_categories() {
 }
 add_action( 'init', 'lfciath_create_default_news_categories' );
 
+// ป้องกัน WordPress redirect /news/ ไปหา post อื่นที่ slug คล้ายกัน
+function lfciath_prevent_news_archive_redirect( $redirect_url ) {
+    if ( is_post_type_archive( 'lfciath_news' ) || is_tax( 'news_category' ) ) {
+        return false;
+    }
+    return $redirect_url;
+}
+add_filter( 'redirect_canonical', 'lfciath_prevent_news_archive_redirect' );
+
 // Flush rewrite rules on activation
 function lfciath_flush_rewrite_rules() {
     lfciath_register_news_cpt();
