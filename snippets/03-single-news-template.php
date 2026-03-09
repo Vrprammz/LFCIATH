@@ -43,7 +43,7 @@ function lfciath_render_single_news( $content ) {
     $display_date   = get_field( 'news_display_date', $post->ID );
     $author_display = get_field( 'news_author_display', $post->ID );
     $overlay_color  = get_field( 'news_hero_overlay_color', $post->ID );
-    $gallery        = get_field( 'news_gallery', $post->ID );
+    $gallery        = function_exists( 'lfciath_get_gallery_images' ) ? lfciath_get_gallery_images( $post->ID ) : array();
     $video_url      = get_field( 'news_video_url', $post->ID );
     $video_position = get_field( 'news_video_position', $post->ID );
 
@@ -175,16 +175,16 @@ function lfciath_render_single_news( $content ) {
         <!-- Gallery -->
         <?php if ( $video_url && $video_position === 'before_gallery' ) echo $video_embed; ?>
 
-        <?php if ( $gallery ) : ?>
+        <?php if ( ! empty( $gallery ) ) : ?>
         <div class="lfciath-news-gallery">
             <div class="lfciath-news-gallery-grid">
                 <?php foreach ( $gallery as $image ) : ?>
                     <a href="<?php echo esc_url( $image['url'] ); ?>"
                        class="lfciath-gallery-item"
                        data-lightbox="news-gallery"
-                       data-title="<?php echo esc_attr( $image['caption'] ); ?>">
-                        <img src="<?php echo esc_url( $image['sizes']['medium_large'] ?? $image['url'] ); ?>"
-                             alt="<?php echo esc_attr( $image['alt'] ); ?>"
+                       data-title="<?php echo esc_attr( isset( $image['caption'] ) ? $image['caption'] : '' ); ?>">
+                        <img src="<?php echo esc_url( isset( $image['sizes']['medium_large'] ) ? $image['sizes']['medium_large'] : $image['url'] ); ?>"
+                             alt="<?php echo esc_attr( isset( $image['alt'] ) ? $image['alt'] : '' ); ?>"
                              loading="lazy" />
                     </a>
                 <?php endforeach; ?>
