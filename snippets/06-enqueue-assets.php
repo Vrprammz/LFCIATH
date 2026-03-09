@@ -228,8 +228,9 @@ add_action( 'wp_head', 'lfciath_add_btn_style' );
 // Site Header สำหรับหน้าข่าว (เหมือน Elementor header ของเว็บ)
 // ========================================
 function lfciath_render_site_header() {
-    // Logo URL — ใช้ไฟล์ที่อัปโหลดไว้แล้ว
-    $logo_url = 'https://www.lfcacademyth.com/wp-content/uploads/2024/05/logo.png';
+    // Logo URLs — สีแดง (default) และ สีดำ (scrolled/ขาว)
+    $logo_red   = 'https://www.lfcacademyth.com/wp-content/uploads/2024/05/logo.png';
+    $logo_white = 'https://www.lfcacademyth.com/wp-content/uploads/2024/05/lfciar.png.webp';
 
     $home = esc_url( home_url( '/' ) );
 
@@ -251,11 +252,8 @@ function lfciath_render_site_header() {
     <header class="lfciath-site-header" id="lfciath-site-header">
         <div class="lfciath-header-inner">
             <a href="<?php echo $home; ?>" class="lfciath-header-logo">
-                <?php if ( $logo_url ) : ?>
-                    <img src="<?php echo esc_url( $logo_url ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" class="lfciath-header-logo-img" />
-                <?php else : ?>
-                    <span class="lfciath-header-logo-text">LFC IA</span>
-                <?php endif; ?>
+                <img src="<?php echo esc_url( $logo_red ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" class="lfciath-header-logo-img lfciath-logo-default" />
+                <img src="<?php echo esc_url( $logo_white ); ?>" alt="<?php echo esc_attr( get_bloginfo( 'name' ) ); ?>" class="lfciath-header-logo-img lfciath-logo-scrolled" />
             </a>
 
             <!-- Hamburger (mobile) -->
@@ -337,12 +335,9 @@ function lfciath_get_news_css() {
 }
 .lfciath-header-logo { display: flex; align-items: center; text-decoration: none; }
 .lfciath-header-logo-img { height: 50px; width: auto; }
-.lfciath-header-logo-text {
-    font-family: "Georgia", "Times New Roman", serif;
-    font-size: 26px; font-weight: 700; font-style: italic;
-    color: #fff; text-decoration: none; letter-spacing: 1px;
-}
-.lfciath-site-header.scrolled .lfciath-header-logo-text { color: #C8102E; }
+.lfciath-logo-scrolled { display: none; }
+.lfciath-site-header.scrolled .lfciath-logo-default { display: none; }
+.lfciath-site-header.scrolled .lfciath-logo-scrolled { display: block; }
 .lfciath-header-nav {
     display: flex; align-items: center; gap: 8px;
 }
