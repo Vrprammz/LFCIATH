@@ -56,6 +56,20 @@ function lfciath_render_full_archive_page() {
         <?php echo $archive_html; ?>
     </div>
 
+    <script>
+    jQuery(document).ready(function($) {
+        $('.lfciath-banner-link').on('click', function() {
+            var bid = $(this).data('banner-id');
+            if (bid) {
+                $.post('<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>', {
+                    action: 'lfciath_track_banner_click',
+                    banner_id: bid
+                });
+            }
+        });
+    });
+    </script>
+
     <?php
     if ( function_exists( 'lfciath_render_site_footer' ) ) {
         lfciath_render_site_footer();
@@ -156,7 +170,7 @@ function lfciath_build_news_archive( $atts ) {
         </div>
         <?php endif; ?>
 
-        <!-- Featured News (first post in featured) -->
+        <!-- Featured News + Banner -->
         <?php
         if ( $atts['show_featured'] === 'yes' && $paged === 1 ) :
             $featured_args = array(
@@ -179,34 +193,71 @@ function lfciath_build_news_archive( $atts ) {
                 );
             }
             $featured = new WP_Query( $featured_args );
-            if ( $featured->have_posts() ) :
+
+            // Get active banners
+            $banners = get_option( 'lfciath_banners', array() );
+            $active_banners = array_values( array_filter( $banners, function( $b ) {
+                return ! empty( $b['active'] ) && ! empty( $b['image_id'] );
+            }));
+            usort( $active_banners, function( $a, $b ) { return ( $a['sort_order'] ?? 0 ) - ( $b['sort_order'] ?? 0 ); } );
+
+            $has_featured = $featured->have_posts();
+            $has_banners  = ! empty( $active_banners );
+
+            if ( $has_featured || $has_banners ) :
+        ?>
+        <div class="lfciath-news-highlight <?php echo ( $has_featured && $has_banners ) ? 'has-banner' : ''; ?>">
+            <?php if ( $has_featured ) :
                 $featured->the_post();
                 $feat_hero = get_field( 'news_hero_image' );
                 $feat_img  = $feat_hero ? $feat_hero['sizes']['large'] : get_the_post_thumbnail_url( get_the_ID(), 'large' );
                 $feat_cats = get_the_terms( get_the_ID(), 'news_category' );
                 $feat_date = get_field( 'news_display_date' ) ?: get_the_date( 'd/m/y' );
-        ?>
-        <div class="lfciath-news-featured">
-            <a href="<?php the_permalink(); ?>" class="lfciath-featured-link">
-                <?php if ( $feat_img ) : ?>
-                    <div class="lfciath-featured-image">
-                        <img src="<?php echo esc_url( $feat_img ); ?>" alt="<?php the_title_attribute(); ?>" loading="lazy" />
-                        <span class="lfciath-featured-badge">ข่าวเด่น</span>
-                    </div>
-                <?php endif; ?>
-                <div class="lfciath-featured-content">
-                    <?php if ( $feat_cats && ! is_wp_error( $feat_cats ) ) : ?>
-                        <span class="lfciath-card-cat"><?php echo esc_html( $feat_cats[0]->name ); ?></span>
+            ?>
+            <div class="lfciath-news-featured">
+                <a href="<?php the_permalink(); ?>" class="lfciath-featured-link">
+                    <?php if ( $feat_img ) : ?>
+                        <div class="lfciath-featured-image">
+                            <img src="<?php echo esc_url( $feat_img ); ?>" alt="<?php the_title_attribute(); ?>" loading="lazy" />
+                            <span class="lfciath-featured-badge">ข่าวเด่น</span>
+                        </div>
                     <?php endif; ?>
-                    <h2 class="lfciath-featured-title"><?php the_title(); ?></h2>
-                    <p class="lfciath-featured-excerpt"><?php echo wp_trim_words( get_the_excerpt(), 40 ); ?></p>
-                    <span class="lfciath-featured-date"><?php echo esc_html( $feat_date ); ?></span>
+                    <div class="lfciath-featured-content">
+                        <?php if ( $feat_cats && ! is_wp_error( $feat_cats ) ) : ?>
+                            <span class="lfciath-card-cat"><?php echo esc_html( $feat_cats[0]->name ); ?></span>
+                        <?php endif; ?>
+                        <h2 class="lfciath-featured-title"><?php the_title(); ?></h2>
+                        <p class="lfciath-featured-excerpt"><?php echo wp_trim_words( get_the_excerpt(), 40 ); ?></p>
+                        <span class="lfciath-featured-date"><?php echo esc_html( $feat_date ); ?></span>
+                    </div>
+                </a>
+            </div>
+            <?php wp_reset_postdata(); endif; ?>
+
+            <?php if ( $has_banners ) : ?>
+            <div class="lfciath-news-banners">
+                <?php foreach ( $active_banners as $banner ) :
+                    $banner_img = wp_get_attachment_image_url( $banner['image_id'], 'large' );
+                    if ( ! $banner_img ) continue;
+                    $banner_link = ! empty( $banner['link_url'] ) ? $banner['link_url'] : '';
+                    $banner_id   = isset( $banner['id'] ) ? $banner['id'] : '';
+                ?>
+                <div class="lfciath-banner-item">
+                    <?php if ( $banner_link ) : ?>
+                        <a href="<?php echo esc_url( $banner_link ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-banner-link" data-banner-id="<?php echo esc_attr( $banner_id ); ?>">
+                            <img src="<?php echo esc_url( $banner_img ); ?>" alt="<?php echo esc_attr( $banner['title'] ?? '' ); ?>" loading="lazy" />
+                        </a>
+                    <?php else : ?>
+                        <img src="<?php echo esc_url( $banner_img ); ?>" alt="<?php echo esc_attr( $banner['title'] ?? '' ); ?>" loading="lazy" />
+                    <?php endif; ?>
                 </div>
-            </a>
+                <?php endforeach; ?>
+            </div>
+            <?php endif; ?>
         </div>
         <?php
-                wp_reset_postdata();
             endif;
+            wp_reset_postdata();
         endif;
         ?>
 

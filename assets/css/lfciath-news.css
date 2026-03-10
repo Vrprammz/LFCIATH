@@ -404,10 +404,50 @@
 }
 
 /* ==========================================
-   NEWS ARCHIVE - Featured Card
+   NEWS ARCHIVE - Highlight (Featured + Banner)
    ========================================== */
-.lfciath-news-featured {
+.lfciath-news-highlight {
     margin-bottom: 40px;
+}
+
+.lfciath-news-highlight.has-banner {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    align-items: start;
+}
+
+.lfciath-news-featured {
+    margin-bottom: 0;
+}
+
+.lfciath-news-banners {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.lfciath-banner-item {
+    border-radius: var(--lfc-radius);
+    overflow: hidden;
+    box-shadow: var(--lfc-shadow);
+    transition: var(--lfc-transition);
+}
+
+.lfciath-banner-item:hover {
+    box-shadow: var(--lfc-shadow-hover);
+    transform: translateY(-2px);
+}
+
+.lfciath-banner-item img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.lfciath-banner-link {
+    display: block;
+    text-decoration: none;
 }
 
 .lfciath-featured-link {
@@ -705,6 +745,20 @@
 
     .lfciath-news-share {
         margin-left: 0;
+    }
+
+    .lfciath-news-highlight.has-banner {
+        grid-template-columns: 1fr;
+    }
+
+    .lfciath-news-banners {
+        flex-direction: row;
+        overflow-x: auto;
+    }
+
+    .lfciath-banner-item {
+        min-width: 250px;
+        flex-shrink: 0;
     }
 
     .lfciath-featured-link {
