@@ -142,20 +142,26 @@ function lfciath_build_news_archive( $atts ) {
         'hide_empty' => true,
     ));
 
+    // Quick Stats for header
+    $total_news  = wp_count_posts( 'lfciath_news' );
+    $total_count = isset( $total_news->publish ) ? intval( $total_news->publish ) : 0;
+    $cat_count   = is_array( $categories ) && ! is_wp_error( $categories ) ? count( $categories ) : 0;
+
+    // Latest update date
+    $latest_post = get_posts( array(
+        'post_type'      => 'lfciath_news',
+        'posts_per_page' => 1,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ));
+    $latest_date = ! empty( $latest_post ) ? get_the_date( 'd/m/Y', $latest_post[0] ) : '-';
+
     ob_start();
     ?>
 
     <div class="lfciath-news-archive">
 
-        <!-- Page Header -->
-        <?php
-        $total_news  = wp_count_posts( 'lfciath_news' );
-        $total_count = isset( $total_news->publish ) ? $total_news->publish : 0;
-        $cat_count   = wp_count_terms( array( 'taxonomy' => 'news_category', 'hide_empty' => true ) );
-        if ( is_wp_error( $cat_count ) ) $cat_count = 0;
-        $latest_post = get_posts( array( 'post_type' => 'lfciath_news', 'posts_per_page' => 1, 'orderby' => 'date', 'order' => 'DESC' ) );
-        $latest_date = ! empty( $latest_post ) ? get_the_date( 'd/m/Y', $latest_post[0] ) : '-';
-        ?>
+        <!-- Page Header with Quick Stats -->
         <div class="lfciath-news-archive-header">
             <h1 class="lfciath-news-archive-title">ข่าวสารและกิจกรรม</h1>
             <p class="lfciath-news-archive-desc">ติดตามข่าวสาร กิจกรรม และความเคลื่อนไหวล่าสุดจาก Liverpool FC International Academy Thailand</p>
@@ -164,12 +170,12 @@ function lfciath_build_news_archive( $atts ) {
                     <span class="lfciath-header-stat-number"><?php echo esc_html( $total_count ); ?></span>
                     <span class="lfciath-header-stat-label">ข่าวทั้งหมด</span>
                 </div>
-                <div class="lfciath-header-stat-divider"></div>
+                <span class="lfciath-header-stat-divider"></span>
                 <div class="lfciath-header-stat">
                     <span class="lfciath-header-stat-number"><?php echo esc_html( $cat_count ); ?></span>
                     <span class="lfciath-header-stat-label">หมวดหมู่</span>
                 </div>
-                <div class="lfciath-header-stat-divider"></div>
+                <span class="lfciath-header-stat-divider"></span>
                 <div class="lfciath-header-stat">
                     <span class="lfciath-header-stat-number"><?php echo esc_html( $latest_date ); ?></span>
                     <span class="lfciath-header-stat-label">อัปเดตล่าสุด</span>
@@ -225,32 +231,35 @@ function lfciath_build_news_archive( $atts ) {
             }));
             usort( $active_banners, function( $a, $b ) { return ( $a['sort_order'] ?? 0 ) - ( $b['sort_order'] ?? 0 ); } );
 
-            // Get upcoming fixture + latest result for sidebar
-            $sb_settings   = get_option( 'lfciath_settings', array() );
-            $sb_logo_id    = isset( $sb_settings['team_logo'] ) ? intval( $sb_settings['team_logo'] ) : 0;
-            $sb_team_logo  = $sb_logo_id ? wp_get_attachment_image_url( $sb_logo_id, 'thumbnail' ) : '';
-            $sb_fixtures   = get_option( 'lfciath_fixtures', array() );
-            $sb_matches    = get_option( 'lfciath_matches', array() );
-            $sb_today      = wp_date( 'Y-m-d' );
+            // Sidebar widget data: matches + fixtures
+            $all_matches_sb  = get_option( 'lfciath_matches', array() );
+            $all_fixtures_sb = get_option( 'lfciath_fixtures', array() );
+            $settings_sb     = get_option( 'lfciath_settings', array() );
+            $team_logo_id_sb = isset( $settings_sb['team_logo'] ) ? intval( $settings_sb['team_logo'] ) : 0;
+            $team_logo_sb    = $team_logo_id_sb ? wp_get_attachment_image_url( $team_logo_id_sb, 'thumbnail' ) : '';
 
-            // Next fixture
-            $sb_upcoming = array_filter( $sb_fixtures, function( $f ) use ( $sb_today ) {
-                return ( $f['match_date'] ?? '' ) >= $sb_today;
+            // Next upcoming fixture
+            $today_sb = wp_date( 'Y-m-d' );
+            $upcoming_sb = array_filter( $all_fixtures_sb, function( $f ) use ( $today_sb ) {
+                return ( $f['match_date'] ?? '' ) >= $today_sb;
             });
-            usort( $sb_upcoming, function( $a, $b ) { return strcmp( $a['match_date'] ?? '', $b['match_date'] ?? '' ); } );
-            $next_fixture = ! empty( $sb_upcoming ) ? array_values( $sb_upcoming )[0] : null;
+            usort( $upcoming_sb, function( $a, $b ) { return strcmp( $a['match_date'] ?? '', $b['match_date'] ?? '' ); } );
+            $next_fixture = ! empty( $upcoming_sb ) ? $upcoming_sb[0] : null;
 
             // Latest result
-            usort( $sb_matches, function( $a, $b ) { return strcmp( $b['match_date'] ?? '', $a['match_date'] ?? '' ); } );
-            $last_result = ! empty( $sb_matches ) ? $sb_matches[0] : null;
+            usort( $all_matches_sb, function( $a, $b ) { return strcmp( $b['match_date'] ?? '', $a['match_date'] ?? '' ); } );
+            $latest_result = ! empty( $all_matches_sb ) ? $all_matches_sb[0] : null;
 
             $has_featured = $featured->have_posts();
-            $has_sidebar  = $next_fixture || ! empty( $active_banners ) || $last_result;
+            $has_banners  = ! empty( $active_banners );
+            $has_sidebar  = $next_fixture || $has_banners || $latest_result;
 
             if ( $has_featured || $has_sidebar ) :
         ?>
-        <div class="lfciath-news-highlight <?php echo ( $has_featured && $has_sidebar ) ? 'has-sidebar' : ''; ?>">
-            <?php if ( $has_featured ) :
+        <div class="lfciath-news-highlight <?php echo ( $has_featured && $has_sidebar ) ? 'has-banner' : ''; ?>">
+
+            <?php // === Featured Card with Overlay ===
+            if ( $has_featured ) :
                 $featured->the_post();
                 $feat_hero = get_field( 'news_hero_image' );
                 $feat_img  = $feat_hero ? $feat_hero['sizes']['large'] : get_the_post_thumbnail_url( get_the_ID(), 'large' );
@@ -259,118 +268,124 @@ function lfciath_build_news_archive( $atts ) {
             ?>
             <div class="lfciath-news-featured">
                 <a href="<?php the_permalink(); ?>" class="lfciath-featured-link">
-                    <div class="lfciath-featured-image">
-                        <?php if ( $feat_img ) : ?>
+                    <?php if ( $feat_img ) : ?>
+                        <div class="lfciath-featured-image">
                             <img src="<?php echo esc_url( $feat_img ); ?>" alt="<?php the_title_attribute(); ?>" loading="lazy" />
-                        <?php endif; ?>
-                        <div class="lfciath-featured-overlay">
-                            <span class="lfciath-featured-badge">ข่าวเด่น</span>
-                            <?php if ( $feat_cats && ! is_wp_error( $feat_cats ) ) : ?>
-                                <span class="lfciath-featured-cat"><?php echo esc_html( $feat_cats[0]->name ); ?></span>
-                            <?php endif; ?>
-                            <h2 class="lfciath-featured-title"><?php the_title(); ?></h2>
-                            <p class="lfciath-featured-excerpt"><?php echo wp_trim_words( get_the_excerpt(), 30 ); ?></p>
-                            <span class="lfciath-featured-date"><?php echo esc_html( $feat_date ); ?></span>
                         </div>
+                    <?php endif; ?>
+                    <div class="lfciath-featured-overlay">
+                        <span class="lfciath-featured-badge">ข่าวเด่น</span>
+                        <?php if ( $feat_cats && ! is_wp_error( $feat_cats ) ) : ?>
+                            <span class="lfciath-card-cat"><?php echo esc_html( $feat_cats[0]->name ); ?></span>
+                        <?php endif; ?>
+                        <h2 class="lfciath-featured-title"><?php the_title(); ?></h2>
+                        <p class="lfciath-featured-excerpt"><?php echo wp_trim_words( get_the_excerpt(), 40 ); ?></p>
+                        <span class="lfciath-featured-date"><?php echo esc_html( $feat_date ); ?></span>
                     </div>
                 </a>
             </div>
             <?php wp_reset_postdata(); endif; ?>
 
-            <?php if ( $has_sidebar ) : ?>
-            <div class="lfciath-news-sidebar">
-                <?php // Widget 1: Next Match ?>
-                <?php if ( $next_fixture ) :
+            <?php // === Sidebar Widgets (3 stacked) ===
+            if ( $has_sidebar ) : ?>
+            <div class="lfciath-news-sidebar-widgets">
+
+                <?php // --- Widget 1: Next Match ---
+                if ( $next_fixture ) :
                     $nf_opp_logo = ! empty( $next_fixture['opponent_logo'] ) ? wp_get_attachment_image_url( $next_fixture['opponent_logo'], 'thumbnail' ) : '';
-                    $nf_date_str = wp_date( 'd M Y', strtotime( $next_fixture['match_date'] ) );
                 ?>
                 <div class="lfciath-sidebar-widget">
-                    <div class="lfciath-widget-header lfciath-widget-fixture">
+                    <div class="lfciath-sidebar-widget-header" style="background: #1e293b;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         นัดต่อไป
                     </div>
-                    <div class="lfciath-widget-body lfciath-widget-match-body">
-                        <div class="lfciath-widget-match-teams">
-                            <div class="lfciath-widget-team">
-                                <?php if ( $sb_team_logo ) : ?><img src="<?php echo esc_url( $sb_team_logo ); ?>" alt="LFCIATH" /><?php endif; ?>
-                                <span>LFC IA TH</span>
+                    <div class="lfciath-sidebar-widget-body">
+                        <div class="lfciath-widget-match">
+                            <div class="lfciath-widget-match-teams">
+                                <div class="lfciath-widget-team">
+                                    <?php if ( $team_logo_sb ) : ?><img src="<?php echo esc_url( $team_logo_sb ); ?>" alt="LFCIATH" /><?php endif; ?>
+                                    <span>LFC IA TH</span>
+                                </div>
+                                <div class="lfciath-widget-vs">VS</div>
+                                <div class="lfciath-widget-team">
+                                    <?php if ( $nf_opp_logo ) : ?><img src="<?php echo esc_url( $nf_opp_logo ); ?>" alt="" /><?php endif; ?>
+                                    <span><?php echo esc_html( $next_fixture['opponent_name'] ?? '' ); ?></span>
+                                </div>
                             </div>
-                            <div class="lfciath-widget-vs">VS</div>
-                            <div class="lfciath-widget-team">
-                                <?php if ( $nf_opp_logo ) : ?><img src="<?php echo esc_url( $nf_opp_logo ); ?>" alt="" /><?php endif; ?>
-                                <span><?php echo esc_html( $next_fixture['opponent_name'] ?? '' ); ?></span>
+                            <div class="lfciath-widget-match-info">
+                                <span><?php echo esc_html( wp_date( 'd/m/Y', strtotime( $next_fixture['match_date'] ?? '' ) ) ); ?> <?php echo esc_html( $next_fixture['match_time'] ?? '' ); ?></span>
+                                <?php if ( ! empty( $next_fixture['venue'] ) ) : ?>
+                                    <small><?php echo esc_html( $next_fixture['venue'] ); ?></small>
+                                <?php endif; ?>
                             </div>
-                        </div>
-                        <div class="lfciath-widget-match-info">
-                            <?php echo esc_html( $nf_date_str ); ?> &middot; <?php echo esc_html( $next_fixture['match_time'] ?? '' ); ?>
-                            <?php if ( ! empty( $next_fixture['age_group'] ) ) : ?>
-                                <small><?php echo esc_html( $next_fixture['age_group'] ); ?></small>
-                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
                 <?php endif; ?>
 
-                <?php // Widget 2: Banners ?>
-                <?php if ( ! empty( $active_banners ) ) :
-                    $display_banners = array_slice( $active_banners, 0, 2 );
+                <?php // --- Widget 2: Banner / Promotion (max 1) ---
+                if ( $has_banners ) :
+                    $single_banner = $active_banners[0];
+                    $banner_img = wp_get_attachment_image_url( $single_banner['image_id'], 'medium_large' );
+                    if ( $banner_img ) :
+                        $banner_link = ! empty( $single_banner['link_url'] ) ? $single_banner['link_url'] : '';
+                        $banner_id   = isset( $single_banner['id'] ) ? $single_banner['id'] : '';
                 ?>
                 <div class="lfciath-sidebar-widget">
-                    <div class="lfciath-widget-header lfciath-widget-banner">
+                    <div class="lfciath-sidebar-widget-header" style="background: var(--lfc-red, #C8102E);">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                         โปรโมชั่น
                     </div>
-                    <div class="lfciath-widget-body lfciath-widget-banners-body">
-                        <?php foreach ( $display_banners as $banner ) :
-                            $banner_img = wp_get_attachment_image_url( $banner['image_id'], 'medium_large' );
-                            if ( ! $banner_img ) continue;
-                            $banner_link = ! empty( $banner['link_url'] ) ? $banner['link_url'] : '';
-                            $banner_id   = isset( $banner['id'] ) ? $banner['id'] : '';
-                        ?>
+                    <div class="lfciath-sidebar-widget-body lfciath-widget-banner-body">
                         <div class="lfciath-banner-item">
                             <?php if ( $banner_link ) : ?>
                                 <a href="<?php echo esc_url( $banner_link ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-banner-link" data-banner-id="<?php echo esc_attr( $banner_id ); ?>">
-                                    <img src="<?php echo esc_url( $banner_img ); ?>" alt="<?php echo esc_attr( $banner['title'] ?? '' ); ?>" loading="lazy" />
+                                    <img src="<?php echo esc_url( $banner_img ); ?>" alt="<?php echo esc_attr( $single_banner['title'] ?? '' ); ?>" loading="lazy" />
                                 </a>
                             <?php else : ?>
-                                <img src="<?php echo esc_url( $banner_img ); ?>" alt="<?php echo esc_attr( $banner['title'] ?? '' ); ?>" loading="lazy" />
+                                <img src="<?php echo esc_url( $banner_img ); ?>" alt="<?php echo esc_attr( $single_banner['title'] ?? '' ); ?>" loading="lazy" />
                             <?php endif; ?>
                         </div>
-                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; endif; ?>
+
+                <?php // --- Widget 3: Latest Result ---
+                if ( $latest_result ) :
+                    $lr_opp_logo = ! empty( $latest_result['opponent_logo'] ) ? wp_get_attachment_image_url( $latest_result['opponent_logo'], 'thumbnail' ) : '';
+                    $lr_r = $latest_result['result'] ?? 'D';
+                    $lr_r_class = $lr_r === 'W' ? 'win' : ( $lr_r === 'L' ? 'loss' : 'draw' );
+                    $lr_r_text  = $lr_r === 'W' ? 'ชนะ' : ( $lr_r === 'L' ? 'แพ้' : 'เสมอ' );
+                ?>
+                <div class="lfciath-sidebar-widget">
+                    <div class="lfciath-sidebar-widget-header" style="background: #0f172a;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        ผลล่าสุด
+                    </div>
+                    <div class="lfciath-sidebar-widget-body">
+                        <div class="lfciath-widget-result-row">
+                            <div class="lfciath-widget-result-teams">
+                                <div class="lfciath-widget-team-sm">
+                                    <?php if ( $team_logo_sb ) : ?><img src="<?php echo esc_url( $team_logo_sb ); ?>" alt="LFCIATH" /><?php endif; ?>
+                                    <span>LFC IA TH</span>
+                                </div>
+                                <div class="lfciath-widget-score">
+                                    <?php echo esc_html( $latest_result['score_home'] ?? 0 ); ?> - <?php echo esc_html( $latest_result['score_away'] ?? 0 ); ?>
+                                </div>
+                                <div class="lfciath-widget-team-sm">
+                                    <?php if ( $lr_opp_logo ) : ?><img src="<?php echo esc_url( $lr_opp_logo ); ?>" alt="" /><?php endif; ?>
+                                    <span><?php echo esc_html( $latest_result['opponent_name'] ?? '' ); ?></span>
+                                </div>
+                            </div>
+                            <span class="lfciath-widget-result-badge lfciath-result-<?php echo esc_attr( $lr_r_class ); ?>"><?php echo esc_html( $lr_r_text ); ?></span>
+                        </div>
                     </div>
                 </div>
                 <?php endif; ?>
 
-                <?php // Widget 3: Latest Result ?>
-                <?php if ( $last_result ) :
-                    $lr_opp_logo = ! empty( $last_result['opponent_logo'] ) ? wp_get_attachment_image_url( $last_result['opponent_logo'], 'thumbnail' ) : '';
-                    $lr_r = $last_result['result'] ?? 'D';
-                    $lr_class = $lr_r === 'W' ? 'win' : ( $lr_r === 'L' ? 'loss' : 'draw' );
-                    $lr_text  = $lr_r === 'W' ? 'ชนะ' : ( $lr_r === 'L' ? 'แพ้' : 'เสมอ' );
-                ?>
-                <div class="lfciath-sidebar-widget">
-                    <div class="lfciath-widget-header lfciath-widget-result">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        ผลล่าสุด
-                    </div>
-                    <div class="lfciath-widget-body lfciath-widget-match-body">
-                        <div class="lfciath-widget-match-teams">
-                            <div class="lfciath-widget-team">
-                                <?php if ( $sb_team_logo ) : ?><img src="<?php echo esc_url( $sb_team_logo ); ?>" alt="LFCIATH" /><?php endif; ?>
-                                <span>LFC IA TH</span>
-                            </div>
-                            <div class="lfciath-widget-score"><?php echo esc_html( $last_result['score_home'] ?? 0 ); ?> - <?php echo esc_html( $last_result['score_away'] ?? 0 ); ?></div>
-                            <div class="lfciath-widget-team">
-                                <?php if ( $lr_opp_logo ) : ?><img src="<?php echo esc_url( $lr_opp_logo ); ?>" alt="" /><?php endif; ?>
-                                <span><?php echo esc_html( $last_result['opponent_name'] ?? '' ); ?></span>
-                            </div>
-                        </div>
-                        <div class="lfciath-widget-result-badge lfciath-result-<?php echo esc_attr( $lr_class ); ?>"><?php echo esc_html( $lr_text ); ?></div>
-                    </div>
-                </div>
-                <?php endif; ?>
             </div>
             <?php endif; ?>
+
         </div>
         <?php
             endif;
@@ -378,7 +393,7 @@ function lfciath_build_news_archive( $atts ) {
         endif;
         ?>
 
-        <!-- Section: Match Center -->
+        <!-- Match Results + Upcoming Fixtures -->
         <?php if ( $paged === 1 ) :
             $all_matches  = get_option( 'lfciath_matches', array() );
             $all_fixtures = get_option( 'lfciath_fixtures', array() );
@@ -400,14 +415,16 @@ function lfciath_build_news_archive( $atts ) {
 
             if ( ! empty( $recent_matches ) || ! empty( $upcoming ) ) :
         ?>
+
+        <!-- Section Header: Match Results -->
         <div class="lfciath-section-header">
-            <div class="lfciath-section-title-bar"></div>
             <h2>ผลการแข่งขัน</h2>
         </div>
+
         <div class="lfciath-match-section">
             <?php if ( ! empty( $recent_matches ) ) : ?>
             <div class="lfciath-match-panel">
-                <div class="lfciath-match-panel-header">
+                <div class="lfciath-match-panel-header lfciath-results-header">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     ผลการแข่งขันล่าสุด
                 </div>
@@ -486,10 +503,12 @@ function lfciath_build_news_archive( $atts ) {
 
         <!-- News Grid -->
         <?php if ( $query->have_posts() ) : ?>
+
+        <!-- Section Header: Latest News -->
         <div class="lfciath-section-header">
-            <div class="lfciath-section-title-bar"></div>
             <h2>ข่าวล่าสุด</h2>
         </div>
+
         <div class="lfciath-news-grid columns-<?php echo esc_attr( $atts['columns'] ); ?>">
             <?php while ( $query->have_posts() ) : $query->the_post(); ?>
                 <?php
