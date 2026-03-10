@@ -236,22 +236,28 @@ function lfciath_build_news_archive( $atts ) {
 
             <?php if ( $has_banners ) : ?>
             <div class="lfciath-news-banners">
-                <?php foreach ( $active_banners as $banner ) :
-                    $banner_img = wp_get_attachment_image_url( $banner['image_id'], 'large' );
-                    if ( ! $banner_img ) continue;
-                    $banner_link = ! empty( $banner['link_url'] ) ? $banner['link_url'] : '';
-                    $banner_id   = isset( $banner['id'] ) ? $banner['id'] : '';
-                ?>
-                <div class="lfciath-banner-item">
-                    <?php if ( $banner_link ) : ?>
-                        <a href="<?php echo esc_url( $banner_link ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-banner-link" data-banner-id="<?php echo esc_attr( $banner_id ); ?>">
-                            <img src="<?php echo esc_url( $banner_img ); ?>" alt="<?php echo esc_attr( $banner['title'] ?? '' ); ?>" loading="lazy" />
-                        </a>
-                    <?php else : ?>
-                        <img src="<?php echo esc_url( $banner_img ); ?>" alt="<?php echo esc_attr( $banner['title'] ?? '' ); ?>" loading="lazy" />
-                    <?php endif; ?>
+                <div class="lfciath-news-banners-header">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    โปรโมชั่น / แบนเนอร์
                 </div>
-                <?php endforeach; ?>
+                <div class="lfciath-news-banners-list">
+                    <?php foreach ( $active_banners as $banner ) :
+                        $banner_img = wp_get_attachment_image_url( $banner['image_id'], 'medium_large' );
+                        if ( ! $banner_img ) continue;
+                        $banner_link = ! empty( $banner['link_url'] ) ? $banner['link_url'] : '';
+                        $banner_id   = isset( $banner['id'] ) ? $banner['id'] : '';
+                    ?>
+                    <div class="lfciath-banner-item">
+                        <?php if ( $banner_link ) : ?>
+                            <a href="<?php echo esc_url( $banner_link ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-banner-link" data-banner-id="<?php echo esc_attr( $banner_id ); ?>">
+                                <img src="<?php echo esc_url( $banner_img ); ?>" alt="<?php echo esc_attr( $banner['title'] ?? '' ); ?>" loading="lazy" />
+                            </a>
+                        <?php else : ?>
+                            <img src="<?php echo esc_url( $banner_img ); ?>" alt="<?php echo esc_attr( $banner['title'] ?? '' ); ?>" loading="lazy" />
+                        <?php endif; ?>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
             <?php endif; ?>
         </div>
