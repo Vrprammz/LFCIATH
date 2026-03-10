@@ -348,7 +348,7 @@ function lfciath_cc_render( $view, $base_url ) {
             if (!confirm('ลบรูปแกลเลอรีทั้งหมด?')) return;
             $('.lfciath-cc-gal-slot').each(function() {
                 var idx = $(this).data('index');
-                $(this).removeClass('has-image').html('<input type="hidden" name="news_gallery_'+idx+'_id" value="" /><span style="color:#94a3b8;font-size:24px;">+</span>');
+                $(this).removeClass('has-image').html('<input type="hidden" name="news_gallery_'+idx+'_id" value="" /><span style="color:#aaaaaa;font-size:24px;">+</span>');
             });
             updateGalCount();
         });
@@ -372,7 +372,7 @@ function lfciath_cc_render( $view, $base_url ) {
             e.stopPropagation();
             var slot = $(this).closest('.lfciath-cc-gal-slot');
             var idx = slot.data('index');
-            slot.removeClass('has-image').html('<input type="hidden" name="news_gallery_'+idx+'_id" value="" /><span style="color:#94a3b8;font-size:24px;">+</span>');
+            slot.removeClass('has-image').html('<input type="hidden" name="news_gallery_'+idx+'_id" value="" /><span style="color:#aaaaaa;font-size:24px;">+</span>');
             updateGalCount();
         });
 
@@ -387,7 +387,7 @@ function lfciath_cc_render( $view, $base_url ) {
                 var a = frame.state().get('selection').first().toJSON();
                 var u = a.sizes && a.sizes.thumbnail ? a.sizes.thumbnail.url : a.url;
                 $('#lfciath-cc-logo-id').val(a.id);
-                $('#lfciath-cc-logo-preview').html('<img src="'+u+'" style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" />').show();
+                $('#lfciath-cc-logo-preview').html('<img src="'+u+'" style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e0e0e0;" />').show();
                 $('#lfciath-cc-logo-remove').show();
             });
             frame.open();
@@ -513,13 +513,13 @@ function lfciath_cc_view_dashboard( $base_url ) {
                         $st    = get_post_status();
                 ?>
                 <tr>
-                    <td><a href="<?php echo esc_url( add_query_arg( array( 'view' => 'edit-news', 'id' => get_the_ID() ), $base_url ) ); ?>" style="color:#1e293b;font-weight:600;text-decoration:none;"><?php echo esc_html( wp_trim_words( get_the_title(), 8 ) ); ?></a></td>
-                    <td style="color:#64748b;font-size:12px;"><?php echo esc_html( get_the_date( 'd/m/y' ) ); ?></td>
-                    <td style="color:#64748b;font-size:12px;"><?php echo esc_html( number_format( $views ) ); ?></td>
+                    <td><a href="<?php echo esc_url( add_query_arg( array( 'view' => 'edit-news', 'id' => get_the_ID() ), $base_url ) ); ?>" style="color:#2d2d2d;font-weight:600;text-decoration:none;"><?php echo esc_html( wp_trim_words( get_the_title(), 8 ) ); ?></a></td>
+                    <td style="color:#888888;font-size:12px;"><?php echo esc_html( get_the_date( 'd/m/y' ) ); ?></td>
+                    <td style="color:#888888;font-size:12px;"><?php echo esc_html( number_format( $views ) ); ?></td>
                     <td><?php echo $st === 'publish' ? '<span class="lfciath-cc-badge lfciath-cc-badge-green">เผยแพร่</span>' : '<span class="lfciath-cc-badge lfciath-cc-badge-yellow">แบบร่าง</span>'; ?></td>
                 </tr>
                 <?php endwhile; wp_reset_postdata(); else : ?>
-                <tr><td colspan="4" style="color:#94a3b8;text-align:center;padding:20px;">ยังไม่มีข่าว</td></tr>
+                <tr><td colspan="4" style="color:#aaaaaa;text-align:center;padding:20px;">ยังไม่มีข่าว</td></tr>
                 <?php endif; ?>
                 </tbody>
             </table>
@@ -548,7 +548,7 @@ function lfciath_cc_view_dashboard( $base_url ) {
                         $r_text  = $r === 'W' ? 'ชนะ' : ( $r === 'L' ? 'แพ้' : 'เสมอ' );
                 ?>
                 <tr>
-                    <td style="font-size:12px;color:#64748b;"><?php echo esc_html( $m['match_date'] ?? '' ); ?></td>
+                    <td style="font-size:12px;color:#888888;"><?php echo esc_html( $m['match_date'] ?? '' ); ?></td>
                     <td style="display:flex;align-items:center;gap:6px;">
                         <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:24px;height:24px;object-fit:contain;border-radius:4px;" /><?php endif; ?>
                         <span style="font-size:13px;"><?php echo esc_html( $m['opponent_name'] ?? '' ); ?></span>
@@ -557,7 +557,7 @@ function lfciath_cc_view_dashboard( $base_url ) {
                     <td><span class="lfciath-cc-badge <?php echo esc_attr( $r_class ); ?>"><?php echo esc_html( $r_text ); ?></span></td>
                 </tr>
                 <?php endforeach; else : ?>
-                <tr><td colspan="4" style="color:#94a3b8;text-align:center;padding:20px;">ยังไม่มีผลแข่งขัน</td></tr>
+                <tr><td colspan="4" style="color:#aaaaaa;text-align:center;padding:20px;">ยังไม่มีผลแข่งขัน</td></tr>
                 <?php endif; ?>
                 </tbody>
             </table>
@@ -571,23 +571,23 @@ function lfciath_cc_view_dashboard( $base_url ) {
 // ========================================
 function lfciath_cc_css() {
     return '
-#lfciath-cc{display:flex;min-height:100vh;font-family:"Sarabun","Noto Sans Thai",sans-serif;font-size:14px;color:#334155;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#f1f5f9;}
+#lfciath-cc{display:flex;min-height:100vh;font-family:"Sarabun","Noto Sans Thai",sans-serif;font-size:14px;color:#444444;position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;background:#f0f0f0;}
 #lfciath-cc *,#lfciath-cc *::before,#lfciath-cc *::after{box-sizing:border-box;}
 #lfciath-cc a{color:inherit;}
 
-.lfciath-cc-sidebar{width:260px;background:#1e293b;color:#94a3b8;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
-.lfciath-cc-sidebar-header{padding:20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #334155;}
+.lfciath-cc-sidebar{width:260px;background:#2d2d2d;color:#aaaaaa;display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;}
+.lfciath-cc-sidebar-header{padding:20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #444444;}
 .lfciath-cc-brand{color:#fff;font-weight:700;font-size:15px;font-family:"Montserrat",sans-serif;}
 .lfciath-cc-nav{flex:1;padding:12px 0;}
 .lfciath-cc-nav-group{margin-bottom:4px;}
-.lfciath-cc-nav-group-label{padding:8px 20px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:600;}
-.lfciath-cc-nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#94a3b8;text-decoration:none !important;transition:all 0.2s;border-left:3px solid transparent;font-size:14px;}
-.lfciath-cc-nav-item:hover{background:#334155;color:#e2e8f0;}
-.lfciath-cc-nav-item.active{background:#334155;color:#fff;border-left-color:#C8102E;font-weight:600;}
+.lfciath-cc-nav-group-label{padding:8px 20px;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888888;font-weight:600;}
+.lfciath-cc-nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;color:#aaaaaa;text-decoration:none !important;transition:all 0.2s;border-left:3px solid transparent;font-size:14px;}
+.lfciath-cc-nav-item:hover{background:#444444;color:#e0e0e0;}
+.lfciath-cc-nav-item.active{background:#444444;color:#fff;border-left-color:#C8102E;font-weight:600;}
 .lfciath-cc-nav-item .dashicons{font-size:18px;width:18px;height:18px;}
-.lfciath-cc-sidebar-footer{padding:12px 16px;border-top:1px solid #334155;}
-.lfciath-cc-collapse-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;background:#334155;color:#94a3b8;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;transition:all 0.2s;}
-.lfciath-cc-collapse-btn:hover{background:#475569;color:#fff;}
+.lfciath-cc-sidebar-footer{padding:12px 16px;border-top:1px solid #444444;}
+.lfciath-cc-collapse-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;background:#444444;color:#aaaaaa;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;transition:all 0.2s;}
+.lfciath-cc-collapse-btn:hover{background:#555555;color:#fff;}
 .lfciath-cc-collapse-btn .dashicons{font-size:16px;width:16px;height:16px;transition:transform 0.3s;}
 .lfciath-cc.collapsed .lfciath-cc-sidebar{width:64px;}
 .lfciath-cc.collapsed .lfciath-cc-sidebar-header .lfciath-cc-brand,
@@ -603,27 +603,27 @@ function lfciath_cc_css() {
 .lfciath-cc.collapsed .lfciath-cc-sidebar-footer{padding:12px 8px;}
 
 .lfciath-cc-main{flex:1;display:flex;flex-direction:column;overflow-y:auto;min-width:0;}
-.lfciath-cc-header{background:#fff;padding:16px 24px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #e2e8f0;flex-shrink:0;}
-.lfciath-cc-header h2{margin:0;font-size:20px;font-weight:700;color:#1e293b;flex:1;}
-.lfciath-cc-header-right{display:flex;align-items:center;gap:16px;font-size:13px;color:#64748b;}
+.lfciath-cc-header{background:#fff;padding:16px 24px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #e0e0e0;flex-shrink:0;}
+.lfciath-cc-header h2{margin:0;font-size:20px;font-weight:700;color:#2d2d2d;flex:1;}
+.lfciath-cc-header-right{display:flex;align-items:center;gap:16px;font-size:13px;color:#888888;}
 .lfciath-cc-header-right a{color:#C8102E;text-decoration:none !important;font-weight:600;}
-.lfciath-cc-hamburger{display:none;background:none;border:none;font-size:24px;cursor:pointer;padding:4px 8px;color:#1e293b;}
+.lfciath-cc-hamburger{display:none;background:none;border:none;font-size:24px;cursor:pointer;padding:4px 8px;color:#2d2d2d;}
 .lfciath-cc-content{flex:1;padding:24px;overflow-y:auto;}
 
-.lfciath-cc-card{background:#fff;border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid #e2e8f0;}
-.lfciath-cc-card-header{font-size:16px;font-weight:700;color:#1e293b;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.lfciath-cc-card{background:#fff;border-radius:10px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid #e0e0e0;}
+.lfciath-cc-card-header{font-size:16px;font-weight:700;color:#2d2d2d;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
 
 .lfciath-cc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
-.lfciath-cc-stat{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid #e2e8f0;display:flex;align-items:flex-start;gap:16px;}
+.lfciath-cc-stat{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06);border:1px solid #e0e0e0;display:flex;align-items:flex-start;gap:16px;}
 .lfciath-cc-stat-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .lfciath-cc-stat-icon .dashicons{font-size:24px;width:24px;height:24px;}
-.lfciath-cc-stat-number{font-size:28px;font-weight:800;color:#1e293b;line-height:1;}
-.lfciath-cc-stat-label{font-size:13px;color:#64748b;margin-top:4px;}
+.lfciath-cc-stat-number{font-size:28px;font-weight:800;color:#2d2d2d;line-height:1;}
+.lfciath-cc-stat-label{font-size:13px;color:#888888;margin-top:4px;}
 
 .lfciath-cc-table{width:100%;border-collapse:collapse;}
-.lfciath-cc-table th{background:#f8fafc;padding:10px 12px;text-align:left;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #e2e8f0;white-space:nowrap;}
-.lfciath-cc-table td{padding:10px 12px;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
-.lfciath-cc-table tr:hover{background:#f8fafc;}
+.lfciath-cc-table th{background:#f5f5f5;padding:10px 12px;text-align:left;font-size:12px;color:#888888;text-transform:uppercase;letter-spacing:0.5px;border-bottom:2px solid #e0e0e0;white-space:nowrap;}
+.lfciath-cc-table td{padding:10px 12px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.lfciath-cc-table tr:hover{background:#f5f5f5;}
 
 .lfciath-cc-form-grid{display:grid;grid-template-columns:1fr 300px;gap:24px;}
 .lfciath-cc-label{display:block;font-weight:600;font-size:13px;color:#374151;margin-bottom:6px;}
@@ -636,8 +636,8 @@ textarea.lfciath-cc-input{min-height:100px;resize:vertical;}
 .lfciath-cc-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all 0.2s;text-decoration:none !important;font-family:inherit;}
 .lfciath-cc-btn-primary{background:#C8102E;color:#fff !important;}
 .lfciath-cc-btn-primary:hover{background:#A50D22;}
-.lfciath-cc-btn-secondary{background:#f1f5f9;color:#374151 !important;border:1px solid #d1d5db;}
-.lfciath-cc-btn-secondary:hover{background:#e2e8f0;}
+.lfciath-cc-btn-secondary{background:#f0f0f0;color:#374151 !important;border:1px solid #d1d5db;}
+.lfciath-cc-btn-secondary:hover{background:#e0e0e0;}
 .lfciath-cc-btn-danger{background:#fff;color:#dc2626 !important;border:1px solid #fecaca;}
 .lfciath-cc-btn-danger:hover{background:#fef2f2;}
 .lfciath-cc-btn-sm{padding:6px 12px;font-size:12px;}
@@ -647,7 +647,7 @@ textarea.lfciath-cc-input{min-height:100px;resize:vertical;}
 .lfciath-cc-badge-green{background:#dcfce7;color:#166534;}
 .lfciath-cc-badge-red{background:#fef2f2;color:#991b1b;}
 .lfciath-cc-badge-yellow{background:#fef9c3;color:#854d0e;}
-.lfciath-cc-badge-gray{background:#f1f5f9;color:#475569;}
+.lfciath-cc-badge-gray{background:#f0f0f0;color:#555555;}
 
 .lfciath-cc-gallery{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
 .lfciath-cc-gal-slot{position:relative;aspect-ratio:1;border:2px dashed #d1d5db;border-radius:8px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#f9fafb;transition:border-color 0.2s;}
@@ -661,7 +661,7 @@ textarea.lfciath-cc-input{min-height:100px;resize:vertical;}
 
 .lfciath-cc-score-row{display:flex;align-items:center;gap:12px;}
 .lfciath-cc-score-input{width:80px;text-align:center;font-size:24px;font-weight:800;padding:12px;}
-.lfciath-cc-score-vs{font-size:20px;font-weight:700;color:#64748b;}
+.lfciath-cc-score-vs{font-size:20px;font-weight:700;color:#888888;}
 
 @media(max-width:1024px){.lfciath-cc-stats{grid-template-columns:repeat(2,1fr);}.lfciath-cc-form-grid{grid-template-columns:1fr;}}
 @media(max-width:768px){

@@ -79,7 +79,7 @@ function lfciath_cc_view_match_form( $base_url, $view ) {
 
                 <label class="lfciath-cc-label">โลโก้คู่แข่ง</label>
                 <div id="lfciath-cc-logo-preview" style="margin-bottom:8px;<?php echo $logo_url ? '' : 'display:none;'; ?>">
-                    <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" /><?php endif; ?>
+                    <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e0e0e0;" /><?php endif; ?>
                 </div>
                 <input type="hidden" name="match_opponent_logo" id="lfciath-cc-logo-id" value="<?php echo esc_attr( $v_opp_logo ); ?>" />
                 <button type="button" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm" id="lfciath-cc-logo-upload">เลือกโลโก้</button>
@@ -94,9 +94,9 @@ function lfciath_cc_view_match_form( $base_url, $view ) {
                         <div style="font-weight:700;margin-bottom:8px;color:#C8102E;">LFCIATH</div>
                         <input type="number" name="score_home" id="score_home" value="<?php echo esc_attr( $v_score_home ); ?>" min="0" class="lfciath-cc-input" style="width:80px;text-align:center;font-size:28px;font-weight:800;padding:12px;" required />
                     </div>
-                    <div style="font-size:24px;font-weight:700;color:#94a3b8;padding-top:28px;">-</div>
+                    <div style="font-size:24px;font-weight:700;color:#aaaaaa;padding-top:28px;">-</div>
                     <div style="text-align:center;">
-                        <div style="font-weight:700;margin-bottom:8px;color:#64748b;"><?php echo esc_html( $v_opp_name ?: 'คู่แข่ง' ); ?></div>
+                        <div style="font-weight:700;margin-bottom:8px;color:#888888;"><?php echo esc_html( $v_opp_name ?: 'คู่แข่ง' ); ?></div>
                         <input type="number" name="score_away" id="score_away" value="<?php echo esc_attr( $v_score_away ); ?>" min="0" class="lfciath-cc-input" style="width:80px;text-align:center;font-size:28px;font-weight:800;padding:12px;" required />
                     </div>
                 </div>
@@ -127,7 +127,7 @@ function lfciath_cc_view_list_matches( $base_url ) {
 
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <a href="<?php echo esc_url( add_query_arg( 'view', 'create-match', $base_url ) ); ?>" class="lfciath-cc-btn lfciath-cc-btn-primary">+ เพิ่มผลแข่งขัน</a>
-        <span style="color:#64748b;font-size:13px;">ทั้งหมด <?php echo esc_html( count( $matches ) ); ?> รายการ</span>
+        <span style="color:#888888;font-size:13px;">ทั้งหมด <?php echo esc_html( count( $matches ) ); ?> รายการ</span>
     </div>
 
     <div class="lfciath-cc-card" style="padding:0;overflow:hidden;">
@@ -166,18 +166,18 @@ function lfciath_cc_view_list_matches( $base_url ) {
                 </td>
                 <td style="font-weight:700;font-size:16px;white-space:nowrap;">
                     <span style="color:#C8102E;"><?php echo esc_html( $m['score_home'] ?? 0 ); ?></span>
-                    <span style="color:#94a3b8;"> - </span>
+                    <span style="color:#aaaaaa;"> - </span>
                     <span><?php echo esc_html( $m['score_away'] ?? 0 ); ?></span>
                 </td>
                 <td><span class="lfciath-cc-badge <?php echo esc_attr( $r_class ); ?>"><?php echo esc_html( $r_text ); ?></span></td>
-                <td style="font-size:12px;color:#64748b;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?php echo esc_html( $m['notes'] ?? '' ); ?></td>
+                <td style="font-size:12px;color:#888888;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?php echo esc_html( $m['notes'] ?? '' ); ?></td>
                 <td>
                     <a href="<?php echo esc_url( add_query_arg( array( 'view' => 'edit-match', 'id' => $mid ), $base_url ) ); ?>" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm">แก้ไข</a>
                     <a href="<?php echo esc_url( $del_url ); ?>" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm lfciath-cc-delete-link" style="margin-left:4px;">ลบ</a>
                 </td>
             </tr>
             <?php endforeach; else : ?>
-            <tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8;">ยังไม่มีผลแข่งขัน — <a href="<?php echo esc_url( add_query_arg( 'view', 'create-match', $base_url ) ); ?>">เพิ่มผลแข่งขัน</a></td></tr>
+            <tr><td colspan="8" style="text-align:center;padding:40px;color:#aaaaaa;">ยังไม่มีผลแข่งขัน — <a href="<?php echo esc_url( add_query_arg( 'view', 'create-match', $base_url ) ); ?>">เพิ่มผลแข่งขัน</a></td></tr>
             <?php endif; ?>
             </tbody>
         </table>
@@ -230,7 +230,7 @@ function lfciath_cc_view_banners( $base_url, $view = 'banners' ) {
                     <?php if ( $img_url ) : ?>
                         <img src="<?php echo esc_url( $img_url ); ?>" style="width:120px;height:60px;object-fit:cover;border-radius:6px;" />
                     <?php else : ?>
-                        <div style="width:120px;height:60px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;">ไม่มีภาพ</div>
+                        <div style="width:120px;height:60px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaaaaa;font-size:11px;">ไม่มีภาพ</div>
                     <?php endif; ?>
                 </td>
                 <td style="font-weight:600;"><?php echo esc_html( $b['title'] ?? '' ); ?></td>
@@ -238,7 +238,7 @@ function lfciath_cc_view_banners( $base_url, $view = 'banners' ) {
                     <?php if ( ! empty( $b['link_url'] ) ) : ?>
                         <a href="<?php echo esc_url( $b['link_url'] ); ?>" target="_blank" style="color:#C8102E;"><?php echo esc_html( $b['link_url'] ); ?></a>
                     <?php else : ?>
-                        <span style="color:#94a3b8;">-</span>
+                        <span style="color:#aaaaaa;">-</span>
                     <?php endif; ?>
                 </td>
                 <td style="font-weight:600;"><?php echo esc_html( number_format( $clicks ) ); ?></td>
@@ -256,7 +256,7 @@ function lfciath_cc_view_banners( $base_url, $view = 'banners' ) {
             </tbody>
         </table>
         <?php else : ?>
-        <p style="color:#94a3b8;text-align:center;padding:20px;">ยังไม่มีแบนเนอร์</p>
+        <p style="color:#aaaaaa;text-align:center;padding:20px;">ยังไม่มีแบนเนอร์</p>
         <?php endif; ?>
     </div>
 
@@ -410,7 +410,7 @@ function lfciath_cc_view_edit_banner_form( $base_url ) {
     $img_url = ! empty( $banner['image_id'] ) ? wp_get_attachment_image_url( $banner['image_id'], 'medium' ) : '';
     ?>
     <div style="margin-bottom:12px;">
-        <a href="<?php echo esc_url( add_query_arg( 'view', 'banners', $base_url ) ); ?>" style="color:#64748b;text-decoration:none;font-size:13px;">&larr; กลับไปรายการแบนเนอร์</a>
+        <a href="<?php echo esc_url( add_query_arg( 'view', 'banners', $base_url ) ); ?>" style="color:#888888;text-decoration:none;font-size:13px;">&larr; กลับไปรายการแบนเนอร์</a>
     </div>
 
     <div class="lfciath-cc-card" style="max-width:700px;">
@@ -575,12 +575,12 @@ function lfciath_match_results_shortcode( $atts ) {
     foreach ( $matches as $m ) {
         $logo_url = ! empty( $m['opponent_logo'] ) ? wp_get_attachment_image_url( $m['opponent_logo'], 'thumbnail' ) : '';
         $r = $m['result'] ?? 'D';
-        $bg = $r === 'W' ? '#dcfce7' : ( $r === 'L' ? '#fef2f2' : '#f1f5f9' );
-        $rc = $r === 'W' ? '#166534' : ( $r === 'L' ? '#991b1b' : '#475569' );
+        $bg = $r === 'W' ? '#dcfce7' : ( $r === 'L' ? '#fef2f2' : '#f0f0f0' );
+        $rc = $r === 'W' ? '#166534' : ( $r === 'L' ? '#991b1b' : '#555555' );
         $rt = $r === 'W' ? 'WIN' : ( $r === 'L' ? 'LOSS' : 'DRAW' );
 
         $out .= '<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:' . $bg . ';border-radius:10px;">';
-        $out .= '<div style="font-size:12px;color:#64748b;width:80px;">' . esc_html( $m['match_date'] ?? '' ) . '<br><small>' . esc_html( $m['age_group'] ?? '' ) . '</small></div>';
+        $out .= '<div style="font-size:12px;color:#888888;width:80px;">' . esc_html( $m['match_date'] ?? '' ) . '<br><small>' . esc_html( $m['age_group'] ?? '' ) . '</small></div>';
         $out .= '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:12px;">';
         $out .= '<span style="font-weight:700;color:#C8102E;">LFCIATH</span>';
         $out .= '<span style="font-size:24px;font-weight:800;">' . esc_html( $m['score_home'] ?? 0 ) . ' - ' . esc_html( $m['score_away'] ?? 0 ) . '</span>';
@@ -614,9 +614,9 @@ function lfciath_cc_view_settings( $base_url ) {
             <?php wp_nonce_field( 'lfciath_cc_save_settings', 'lfciath_cc_settings_nonce' ); ?>
 
             <label class="lfciath-cc-label">โลโก้ทีม LFC IA Thailand</label>
-            <p style="font-size:12px;color:#64748b;margin:0 0 8px;">ใช้แสดงในหน้าผลแข่งขันและตารางนัดต่อไป</p>
+            <p style="font-size:12px;color:#888888;margin:0 0 8px;">ใช้แสดงในหน้าผลแข่งขันและตารางนัดต่อไป</p>
             <div id="lfciath-cc-team-logo-preview" style="margin-bottom:8px;<?php echo $logo_url ? '' : 'display:none;'; ?>">
-                <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" /><?php endif; ?>
+                <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #e0e0e0;" /><?php endif; ?>
             </div>
             <input type="hidden" name="team_logo_id" id="lfciath-cc-team-logo-id" value="<?php echo esc_attr( $logo_id ); ?>" />
             <button type="button" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm" id="lfciath-cc-team-logo-upload">เลือกโลโก้</button>
@@ -636,7 +636,7 @@ function lfciath_cc_view_settings( $base_url ) {
             frame.on('select', function() {
                 var a = frame.state().get('selection').first().toJSON();
                 $('#lfciath-cc-team-logo-id').val(a.id);
-                $('#lfciath-cc-team-logo-preview').html('<img src="'+a.url+'" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" />').show();
+                $('#lfciath-cc-team-logo-preview').html('<img src="'+a.url+'" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #e0e0e0;" />').show();
                 $('#lfciath-cc-team-logo-remove').show();
             });
             frame.open();
@@ -750,7 +750,7 @@ function lfciath_cc_view_fixture_form( $base_url, $view ) {
 
                 <label class="lfciath-cc-label">โลโก้คู่แข่ง</label>
                 <div id="lfciath-cc-fix-logo-preview" style="margin-bottom:8px;<?php echo $logo_url ? '' : 'display:none;'; ?>">
-                    <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" /><?php endif; ?>
+                    <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e0e0e0;" /><?php endif; ?>
                 </div>
                 <input type="hidden" name="fixture_opponent_logo" id="lfciath-cc-fix-logo-id" value="<?php echo esc_attr( $v_opp_logo ); ?>" />
                 <button type="button" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm" id="lfciath-cc-fix-logo-upload">เลือกโลโก้</button>
@@ -776,7 +776,7 @@ function lfciath_cc_view_fixture_form( $base_url, $view ) {
             frame.on('select', function() {
                 var a = frame.state().get('selection').first().toJSON();
                 $('#lfciath-cc-fix-logo-id').val(a.id);
-                $('#lfciath-cc-fix-logo-preview').html('<img src="'+a.url+'" style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" />').show();
+                $('#lfciath-cc-fix-logo-preview').html('<img src="'+a.url+'" style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e0e0e0;" />').show();
                 $('#lfciath-cc-fix-logo-remove').show();
             });
             frame.open();
@@ -803,7 +803,7 @@ function lfciath_cc_view_list_fixtures( $base_url ) {
 
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <a href="<?php echo esc_url( add_query_arg( 'view', 'create-fixture', $base_url ) ); ?>" class="lfciath-cc-btn lfciath-cc-btn-primary">+ เพิ่มนัดต่อไป</a>
-        <span style="color:#64748b;font-size:13px;">ทั้งหมด <?php echo esc_html( count( $fixtures ) ); ?> นัด</span>
+        <span style="color:#888888;font-size:13px;">ทั้งหมด <?php echo esc_html( count( $fixtures ) ); ?> นัด</span>
     </div>
 
     <div class="lfciath-cc-card" style="padding:0;overflow:hidden;">
@@ -839,7 +839,7 @@ function lfciath_cc_view_list_fixtures( $base_url ) {
                     <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:28px;height:28px;object-fit:contain;border-radius:4px;" /><?php endif; ?>
                     <?php echo esc_html( $f['opponent_name'] ?? '' ); ?>
                 </td>
-                <td style="font-size:12px;color:#64748b;"><?php echo esc_html( $f['venue'] ?? '-' ); ?></td>
+                <td style="font-size:12px;color:#888888;"><?php echo esc_html( $f['venue'] ?? '-' ); ?></td>
                 <td>
                     <?php echo $is_past
                         ? '<span class="lfciath-cc-badge lfciath-cc-badge-gray">ผ่านแล้ว</span>'
@@ -851,7 +851,7 @@ function lfciath_cc_view_list_fixtures( $base_url ) {
                 </td>
             </tr>
             <?php endforeach; else : ?>
-            <tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8;">ยังไม่มีนัดต่อไป — <a href="<?php echo esc_url( add_query_arg( 'view', 'create-fixture', $base_url ) ); ?>">เพิ่มนัดต่อไป</a></td></tr>
+            <tr><td colspan="8" style="text-align:center;padding:40px;color:#aaaaaa;">ยังไม่มีนัดต่อไป — <a href="<?php echo esc_url( add_query_arg( 'view', 'create-fixture', $base_url ) ); ?>">เพิ่มนัดต่อไป</a></td></tr>
             <?php endif; ?>
             </tbody>
         </table>

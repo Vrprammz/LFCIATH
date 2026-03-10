@@ -83,7 +83,7 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
                 <!-- Hero Image -->
                 <div class="lfciath-cc-card">
                     <label class="lfciath-cc-label">ภาพ Hero Banner</label>
-                    <p style="color:#64748b;font-size:12px;margin:0 0 10px;">แนะนำ 1920x600px</p>
+                    <p style="color:#888888;font-size:12px;margin:0 0 10px;">แนะนำ 1920x600px</p>
                     <div id="lfciath-cc-hero-preview" style="margin-bottom:10px;<?php echo $v_hero_url ? '' : 'display:none;'; ?>">
                         <?php if ( $v_hero_url ) : ?><img src="<?php echo esc_url( $v_hero_url ); ?>" style="max-width:100%;max-height:200px;border-radius:8px;object-fit:cover;" /><?php endif; ?>
                     </div>
@@ -112,7 +112,7 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
                     <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;">
                         <button type="button" class="lfciath-cc-btn lfciath-cc-btn-primary lfciath-cc-btn-sm" id="lfciath-cc-gal-multi">+ เลือกหลายรูป</button>
                         <button type="button" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm" id="lfciath-cc-gal-clear-all" style="display:none;">ลบทั้งหมด</button>
-                        <span id="lfciath-cc-gal-count" style="font-size:12px;color:#64748b;"></span>
+                        <span id="lfciath-cc-gal-count" style="font-size:12px;color:#888888;"></span>
                     </div>
                     <div class="lfciath-cc-gallery">
                         <?php for ( $i = 1; $i <= 10; $i++ ) :
@@ -124,7 +124,7 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
                                 <img src="<?php echo esc_url( $g['url'] ); ?>" style="width:100%;height:100%;object-fit:cover;" />
                                 <button type="button" class="lfciath-cc-gal-remove">&times;</button>
                             <?php else : ?>
-                                <span style="color:#94a3b8;font-size:24px;">+</span>
+                                <span style="color:#aaaaaa;font-size:24px;">+</span>
                             <?php endif; ?>
                         </div>
                         <?php endfor; ?>
@@ -166,7 +166,7 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
                         </label>
                         <?php endforeach; ?>
                     <?php else : ?>
-                        <p style="color:#94a3b8;">ยังไม่มีหมวดหมู่</p>
+                        <p style="color:#aaaaaa;">ยังไม่มีหมวดหมู่</p>
                     <?php endif; ?>
                 </div>
 
@@ -209,7 +209,7 @@ function lfciath_cc_view_list_news( $base_url ) {
 
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <a href="<?php echo esc_url( add_query_arg( 'view', 'create-news', $base_url ) ); ?>" class="lfciath-cc-btn lfciath-cc-btn-primary">+ สร้างข่าวใหม่</a>
-        <span style="color:#64748b;font-size:13px;">ทั้งหมด <?php echo esc_html( $query->found_posts ); ?> รายการ</span>
+        <span style="color:#888888;font-size:13px;">ทั้งหมด <?php echo esc_html( $query->found_posts ); ?> รายการ</span>
     </div>
 
     <div class="lfciath-cc-card" style="padding:0;overflow:hidden;">
@@ -242,11 +242,11 @@ function lfciath_cc_view_list_news( $base_url ) {
                     <?php if ( $thumb ) : ?>
                         <img src="<?php echo esc_url( $thumb ); ?>" style="width:50px;height:50px;object-fit:cover;border-radius:6px;" />
                     <?php else : ?>
-                        <div style="width:50px;height:50px;background:#f1f5f9;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:10px;">LFC</div>
+                        <div style="width:50px;height:50px;background:#f0f0f0;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaaaaa;font-size:10px;">LFC</div>
                     <?php endif; ?>
                 </td>
                 <td>
-                    <a href="<?php echo esc_url( add_query_arg( array( 'view' => 'edit-news', 'id' => $pid ), $base_url ) ); ?>" style="color:#1e293b;font-weight:600;text-decoration:none;">
+                    <a href="<?php echo esc_url( add_query_arg( array( 'view' => 'edit-news', 'id' => $pid ), $base_url ) ); ?>" style="color:#2d2d2d;font-weight:600;text-decoration:none;">
                         <?php echo esc_html( wp_trim_words( get_the_title(), 12 ) ); ?>
                     </a>
                 </td>
@@ -256,12 +256,12 @@ function lfciath_cc_view_list_news( $base_url ) {
                         $names = wp_list_pluck( $cats, 'name' );
                         echo esc_html( implode( ', ', $names ) );
                     } else {
-                        echo '<span style="color:#94a3b8;">-</span>';
+                        echo '<span style="color:#aaaaaa;">-</span>';
                     }
                     ?>
                 </td>
-                <td style="font-size:12px;color:#64748b;"><?php echo esc_html( get_the_date( 'd/m/y' ) ); ?></td>
-                <td style="font-size:12px;color:#64748b;"><?php echo esc_html( number_format( $views ) ); ?></td>
+                <td style="font-size:12px;color:#888888;"><?php echo esc_html( get_the_date( 'd/m/y' ) ); ?></td>
+                <td style="font-size:12px;color:#888888;"><?php echo esc_html( number_format( $views ) ); ?></td>
                 <td>
                     <?php echo $st === 'publish'
                         ? '<span class="lfciath-cc-badge lfciath-cc-badge-green">เผยแพร่</span>'
@@ -273,7 +273,7 @@ function lfciath_cc_view_list_news( $base_url ) {
                 </td>
             </tr>
             <?php endwhile; wp_reset_postdata(); else : ?>
-            <tr><td colspan="7" style="text-align:center;padding:40px;color:#94a3b8;">ยังไม่มีข่าว — <a href="<?php echo esc_url( add_query_arg( 'view', 'create-news', $base_url ) ); ?>">สร้างข่าวใหม่</a></td></tr>
+            <tr><td colspan="7" style="text-align:center;padding:40px;color:#aaaaaa;">ยังไม่มีข่าว — <a href="<?php echo esc_url( add_query_arg( 'view', 'create-news', $base_url ) ); ?>">สร้างข่าวใหม่</a></td></tr>
             <?php endif; ?>
             </tbody>
         </table>

@@ -295,7 +295,7 @@ function lfciath_build_news_archive( $atts ) {
                     $nf_opp_logo = ! empty( $next_fixture['opponent_logo'] ) ? wp_get_attachment_image_url( $next_fixture['opponent_logo'], 'thumbnail' ) : '';
                 ?>
                 <div class="lfciath-sidebar-widget">
-                    <div class="lfciath-sidebar-widget-header" style="background: #1e293b;">
+                    <div class="lfciath-sidebar-widget-header" style="background: #2d2d2d;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         นัดต่อไป
                     </div>
@@ -358,7 +358,7 @@ function lfciath_build_news_archive( $atts ) {
                     $lr_r_text  = $lr_r === 'W' ? 'ชนะ' : ( $lr_r === 'L' ? 'แพ้' : 'เสมอ' );
                 ?>
                 <div class="lfciath-sidebar-widget">
-                    <div class="lfciath-sidebar-widget-header" style="background: #0f172a;">
+                    <div class="lfciath-sidebar-widget-header" style="background: #1A1A1A;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         ผลล่าสุด
                     </div>
