@@ -334,7 +334,7 @@ function lfciath_get_news_css() {
     height: 70px;
 }
 .lfciath-header-logo { display: flex; align-items: center; text-decoration: none; }
-.lfciath-header-logo-img { height: 50px; width: auto; }
+.lfciath-header-logo-img { height: 35px; width: auto; }
 .lfciath-logo-scrolled { display: none !important; }
 .lfciath-site-header.scrolled .lfciath-logo-default { display: none !important; }
 .lfciath-site-header.scrolled .lfciath-logo-scrolled { display: block !important; }
