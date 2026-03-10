@@ -109,6 +109,11 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
                 <!-- Gallery -->
                 <div class="lfciath-cc-card">
                     <label class="lfciath-cc-label">แกลเลอรี (สูงสุด 10 รูป)</label>
+                    <div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;">
+                        <button type="button" class="lfciath-cc-btn lfciath-cc-btn-primary lfciath-cc-btn-sm" id="lfciath-cc-gal-multi">+ เลือกหลายรูป</button>
+                        <button type="button" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm" id="lfciath-cc-gal-clear-all" style="display:none;">ลบทั้งหมด</button>
+                        <span id="lfciath-cc-gal-count" style="font-size:12px;color:#64748b;"></span>
+                    </div>
                     <div class="lfciath-cc-gallery">
                         <?php for ( $i = 1; $i <= 10; $i++ ) :
                             $g = isset( $gallery[ $i ] ) ? $gallery[ $i ] : null;

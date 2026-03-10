@@ -263,7 +263,51 @@ function lfciath_cc_render( $view, $base_url ) {
             $(this).hide();
         });
 
-        // Gallery slots
+        // Gallery: helper to update count & clear-all button
+        function updateGalCount() {
+            var filled = $('.lfciath-cc-gal-slot.has-image').length;
+            $('#lfciath-cc-gal-count').text(filled > 0 ? filled + '/10 รูป' : '');
+            $('#lfciath-cc-gal-clear-all').toggle(filled > 0);
+        }
+
+        // Gallery: multi-select button
+        $(document).on('click', '#lfciath-cc-gal-multi', function(e) {
+            e.preventDefault();
+            var emptySlots = $('.lfciath-cc-gal-slot:not(.has-image)');
+            if (emptySlots.length === 0) { alert('แกลเลอรีเต็มแล้ว (10/10 รูป)'); return; }
+            var frame = wp.media({ title:'เลือกรูปแกลเลอรี (เลือกได้หลายรูป)', button:{text:'เพิ่มรูปที่เลือก'}, multiple:true, library:{type:'image'} });
+            frame.on('select', function() {
+                var selected = frame.state().get('selection').toJSON();
+                var slots = $('.lfciath-cc-gal-slot:not(.has-image)');
+                var max = Math.min(selected.length, slots.length);
+                for (var i = 0; i < max; i++) {
+                    var a = selected[i];
+                    var u = a.sizes && a.sizes.thumbnail ? a.sizes.thumbnail.url : a.url;
+                    var slot = $(slots[i]);
+                    var idx = slot.data('index');
+                    var name = 'news_gallery_'+idx+'_id';
+                    slot.addClass('has-image').html('<input type="hidden" name="'+name+'" value="'+a.id+'" /><img src="'+u+'" style="width:100%;height:100%;object-fit:cover;" /><button type="button" class="lfciath-cc-gal-remove">&times;</button>');
+                }
+                if (selected.length > slots.length) {
+                    alert('เลือก ' + selected.length + ' รูป แต่มีช่องว่างแค่ ' + slots.length + ' ช่อง — เพิ่มได้ ' + max + ' รูป');
+                }
+                updateGalCount();
+            });
+            frame.open();
+        });
+
+        // Gallery: clear all button
+        $(document).on('click', '#lfciath-cc-gal-clear-all', function(e) {
+            e.preventDefault();
+            if (!confirm('ลบรูปแกลเลอรีทั้งหมด?')) return;
+            $('.lfciath-cc-gal-slot').each(function() {
+                var idx = $(this).data('index');
+                $(this).removeClass('has-image').html('<input type="hidden" name="news_gallery_'+idx+'_id" value="" /><span style="color:#94a3b8;font-size:24px;">+</span>');
+            });
+            updateGalCount();
+        });
+
+        // Gallery: single slot click
         $(document).on('click', '.lfciath-cc-gal-slot', function(e) {
             if ($(e.target).hasClass('lfciath-cc-gal-remove')) return;
             var slot = $(this);
@@ -274,6 +318,7 @@ function lfciath_cc_render( $view, $base_url ) {
                 var idx = slot.data('index');
                 var name = 'news_gallery_'+idx+'_id';
                 slot.addClass('has-image').html('<input type="hidden" name="'+name+'" value="'+a.id+'" /><img src="'+u+'" style="width:100%;height:100%;object-fit:cover;" /><button type="button" class="lfciath-cc-gal-remove">&times;</button>');
+                updateGalCount();
             });
             frame.open();
         });
@@ -282,7 +327,11 @@ function lfciath_cc_render( $view, $base_url ) {
             var slot = $(this).closest('.lfciath-cc-gal-slot');
             var idx = slot.data('index');
             slot.removeClass('has-image').html('<input type="hidden" name="news_gallery_'+idx+'_id" value="" /><span style="color:#94a3b8;font-size:24px;">+</span>');
+            updateGalCount();
         });
+
+        // Init gallery count
+        updateGalCount();
 
         // Logo upload (opponent)
         $(document).on('click', '#lfciath-cc-logo-upload', function(e) {
