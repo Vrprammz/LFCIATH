@@ -130,6 +130,7 @@ function lfciath_cc_view_title( $view ) {
         'edit-fixture'   => 'แก้ไขนัดต่อไป',
         'list-fixtures'  => 'ตารางนัดต่อไป',
         'banners'        => 'จัดการแบนเนอร์',
+        'edit-banner'    => 'แก้ไขแบนเนอร์',
         'settings'       => 'ตั้งค่าทั่วไป',
     );
     return isset( $map[ $view ] ) ? $map[ $view ] : 'Dashboard';
@@ -170,8 +171,10 @@ function lfciath_cc_render( $view, $base_url ) {
                 <?php endforeach; ?>
             </nav>
             <div class="lfciath-cc-sidebar-footer">
-                <a href="<?php echo esc_url( admin_url() ); ?>">&#8592; WP Admin</a>
-                <a href="<?php echo esc_url( home_url() ); ?>" target="_blank">ดูเว็บไซต์ &#8599;</a>
+                <button type="button" class="lfciath-cc-collapse-btn" id="lfciath-cc-collapse" title="ย่อเมนู">
+                    <span class="dashicons dashicons-arrow-left-alt2"></span>
+                    <span class="lfciath-cc-collapse-text">ย่อเมนู</span>
+                </button>
             </div>
         </aside>
 
@@ -245,8 +248,9 @@ function lfciath_cc_render( $view, $base_url ) {
                         }
                         break;
                     case 'banners':
+                    case 'edit-banner':
                         if ( function_exists( 'lfciath_cc_view_banners' ) ) {
-                            lfciath_cc_view_banners( $cc_url );
+                            lfciath_cc_view_banners( $cc_url, $view );
                         }
                         break;
                     case 'settings':
@@ -268,12 +272,21 @@ function lfciath_cc_render( $view, $base_url ) {
         nonce: '<?php echo esc_attr( $nonce ); ?>'
     };
     jQuery(document).ready(function($) {
-        // Hamburger toggle
+        // Hamburger toggle (mobile)
         $('#lfciath-cc-hamburger').on('click', function() {
             $('#lfciath-cc-sidebar').toggleClass('open');
         });
         $('.lfciath-cc-content').on('click', function() {
             $('#lfciath-cc-sidebar').removeClass('open');
+        });
+
+        // Sidebar collapse/expand
+        if (localStorage.getItem('lfciath_cc_collapsed') === '1') {
+            $('#lfciath-cc').addClass('collapsed');
+        }
+        $('#lfciath-cc-collapse').on('click', function() {
+            $('#lfciath-cc').toggleClass('collapsed');
+            localStorage.setItem('lfciath_cc_collapsed', $('#lfciath-cc').hasClass('collapsed') ? '1' : '0');
         });
 
         // Hero image upload
@@ -572,9 +585,22 @@ function lfciath_cc_css() {
 .lfciath-cc-nav-item:hover{background:#334155;color:#e2e8f0;}
 .lfciath-cc-nav-item.active{background:#334155;color:#fff;border-left-color:#C8102E;font-weight:600;}
 .lfciath-cc-nav-item .dashicons{font-size:18px;width:18px;height:18px;}
-.lfciath-cc-sidebar-footer{padding:16px 20px;border-top:1px solid #334155;display:flex;flex-direction:column;gap:8px;}
-.lfciath-cc-sidebar-footer a{color:#64748b;text-decoration:none !important;font-size:13px;}
-.lfciath-cc-sidebar-footer a:hover{color:#fff;}
+.lfciath-cc-sidebar-footer{padding:12px 16px;border-top:1px solid #334155;}
+.lfciath-cc-collapse-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;background:#334155;color:#94a3b8;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;transition:all 0.2s;}
+.lfciath-cc-collapse-btn:hover{background:#475569;color:#fff;}
+.lfciath-cc-collapse-btn .dashicons{font-size:16px;width:16px;height:16px;transition:transform 0.3s;}
+.lfciath-cc.collapsed .lfciath-cc-sidebar{width:64px;}
+.lfciath-cc.collapsed .lfciath-cc-sidebar-header .lfciath-cc-brand,
+.lfciath-cc.collapsed .lfciath-cc-nav-group-label,
+.lfciath-cc.collapsed .lfciath-cc-collapse-text{display:none;}
+.lfciath-cc.collapsed .lfciath-cc-sidebar-header{padding:16px;justify-content:center;}
+.lfciath-cc.collapsed .lfciath-cc-sidebar-header img{height:28px;}
+.lfciath-cc.collapsed .lfciath-cc-nav-item{padding:10px 0;justify-content:center;gap:0;border-left:none;}
+.lfciath-cc.collapsed .lfciath-cc-nav-item .dashicons{font-size:20px;width:20px;height:20px;}
+.lfciath-cc.collapsed .lfciath-cc-nav-item span:not(.dashicons){display:none;}
+.lfciath-cc.collapsed .lfciath-cc-collapse-btn{justify-content:center;padding:8px;}
+.lfciath-cc.collapsed .lfciath-cc-collapse-btn .dashicons{transform:rotate(180deg);}
+.lfciath-cc.collapsed .lfciath-cc-sidebar-footer{padding:12px 8px;}
 
 .lfciath-cc-main{flex:1;display:flex;flex-direction:column;overflow-y:auto;min-width:0;}
 .lfciath-cc-header{background:#fff;padding:16px 24px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #e2e8f0;flex-shrink:0;}

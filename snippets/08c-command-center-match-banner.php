@@ -188,7 +188,13 @@ function lfciath_cc_view_list_matches( $base_url ) {
 // ========================================
 // Banners View (รายการ + ฟอร์มเพิ่ม)
 // ========================================
-function lfciath_cc_view_banners( $base_url ) {
+function lfciath_cc_view_banners( $base_url, $view = 'banners' ) {
+    // Edit mode
+    if ( 'edit-banner' === $view && isset( $_GET['id'] ) ) {
+        lfciath_cc_view_edit_banner_form( $base_url );
+        return;
+    }
+
     $banners = get_option( 'lfciath_banners', array() );
     usort( $banners, function( $a, $b ) { return ( $a['sort_order'] ?? 0 ) - ( $b['sort_order'] ?? 0 ); } );
     ?>
@@ -205,7 +211,7 @@ function lfciath_cc_view_banners( $base_url ) {
                     <th>ลิงก์</th>
                     <th>คลิก</th>
                     <th>สถานะ</th>
-                    <th style="width:80px;">จัดการ</th>
+                    <th style="width:130px;">จัดการ</th>
                 </tr>
             </thead>
             <tbody>
@@ -241,8 +247,9 @@ function lfciath_cc_view_banners( $base_url ) {
                         ? '<span class="lfciath-cc-badge lfciath-cc-badge-green">เปิด</span>'
                         : '<span class="lfciath-cc-badge lfciath-cc-badge-gray">ปิด</span>'; ?>
                 </td>
-                <td>
-                    <a href="<?php echo esc_url( $del_url ); ?>" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm lfciath-cc-delete-link">ลบ</a>
+                <td style="white-space:nowrap;">
+                    <a href="<?php echo esc_url( add_query_arg( array( 'view' => 'edit-banner', 'id' => $bid ), $base_url ) ); ?>" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm">แก้ไข</a>
+                    <a href="<?php echo esc_url( $del_url ); ?>" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm lfciath-cc-delete-link" style="margin-left:4px;">ลบ</a>
                 </td>
             </tr>
             <?php endforeach; ?>
@@ -383,6 +390,76 @@ function lfciath_handle_cc_delete_match() {
 add_action( 'admin_post_lfciath_cc_delete_match', 'lfciath_handle_cc_delete_match' );
 
 // ========================================
+// Edit Banner Form
+// ========================================
+function lfciath_cc_view_edit_banner_form( $base_url ) {
+    $bid     = sanitize_text_field( wp_unslash( $_GET['id'] ) );
+    $banners = get_option( 'lfciath_banners', array() );
+    $banner  = null;
+    foreach ( $banners as $b ) {
+        if ( isset( $b['id'] ) && $b['id'] === $bid ) {
+            $banner = $b;
+            break;
+        }
+    }
+    if ( ! $banner ) {
+        echo '<div class="lfciath-cc-notice lfciath-cc-notice-error">ไม่พบแบนเนอร์นี้</div>';
+        return;
+    }
+
+    $img_url = ! empty( $banner['image_id'] ) ? wp_get_attachment_image_url( $banner['image_id'], 'medium' ) : '';
+    ?>
+    <div style="margin-bottom:12px;">
+        <a href="<?php echo esc_url( add_query_arg( 'view', 'banners', $base_url ) ); ?>" style="color:#64748b;text-decoration:none;font-size:13px;">&larr; กลับไปรายการแบนเนอร์</a>
+    </div>
+
+    <div class="lfciath-cc-card" style="max-width:700px;">
+        <div class="lfciath-cc-card-header"><span class="dashicons dashicons-edit"></span> แก้ไขแบนเนอร์</div>
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="lfciath_cc_save_banner" />
+            <input type="hidden" name="lfciath_banner_id" value="<?php echo esc_attr( $bid ); ?>" />
+            <input type="hidden" name="lfciath_redirect_base" value="<?php echo esc_url( $base_url ); ?>" />
+            <?php wp_nonce_field( 'lfciath_cc_save_banner', 'lfciath_cc_banner_nonce' ); ?>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                <div>
+                    <label class="lfciath-cc-label">ชื่อแบนเนอร์ *</label>
+                    <input type="text" name="banner_title" class="lfciath-cc-input" value="<?php echo esc_attr( $banner['title'] ?? '' ); ?>" required />
+                </div>
+                <div>
+                    <label class="lfciath-cc-label">ลิงก์ URL</label>
+                    <input type="url" name="banner_link_url" class="lfciath-cc-input" value="<?php echo esc_attr( $banner['link_url'] ?? '' ); ?>" />
+                </div>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label class="lfciath-cc-label">ภาพแบนเนอร์ *</label>
+                <div id="lfciath-cc-banner-preview" style="margin-bottom:8px;<?php echo $img_url ? '' : 'display:none;'; ?>">
+                    <?php if ( $img_url ) : ?><img src="<?php echo esc_url( $img_url ); ?>" style="max-width:100%;max-height:150px;border-radius:8px;" /><?php endif; ?>
+                </div>
+                <input type="hidden" name="banner_image_id" id="lfciath-cc-banner-img-id" value="<?php echo esc_attr( $banner['image_id'] ?? '' ); ?>" />
+                <button type="button" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm" id="lfciath-cc-banner-upload">เปลี่ยนภาพ</button>
+                <button type="button" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm" id="lfciath-cc-banner-remove" style="<?php echo $img_url ? '' : 'display:none;'; ?>margin-left:4px;">ลบภาพ</button>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+                <label style="cursor:pointer;display:flex;align-items:center;gap:6px;">
+                    <input type="checkbox" name="banner_active" value="1" <?php checked( ! empty( $banner['active'] ) ); ?> />
+                    <span style="font-weight:600;">เปิดใช้งาน</span>
+                </label>
+                <div>
+                    <label class="lfciath-cc-label" style="margin:0;">ลำดับ</label>
+                    <input type="number" name="banner_sort_order" value="<?php echo esc_attr( $banner['sort_order'] ?? 0 ); ?>" class="lfciath-cc-input" style="width:80px;" min="0" />
+                </div>
+            </div>
+
+            <button type="submit" class="lfciath-cc-btn lfciath-cc-btn-primary">อัปเดตแบนเนอร์</button>
+        </form>
+    </div>
+    <?php
+}
+
+// ========================================
 // Form Handler: บันทึกแบนเนอร์
 // ========================================
 function lfciath_handle_cc_save_banner() {
@@ -394,19 +471,36 @@ function lfciath_handle_cc_save_banner() {
     }
 
     $redirect_base = isset( $_POST['lfciath_redirect_base'] ) ? esc_url_raw( wp_unslash( $_POST['lfciath_redirect_base'] ) ) : home_url();
+    $banner_id     = isset( $_POST['lfciath_banner_id'] ) ? sanitize_text_field( wp_unslash( $_POST['lfciath_banner_id'] ) ) : '';
 
-    $data = array(
-        'id'         => uniqid( 'b_' ),
-        'title'      => isset( $_POST['banner_title'] ) ? sanitize_text_field( wp_unslash( $_POST['banner_title'] ) ) : '',
-        'image_id'   => isset( $_POST['banner_image_id'] ) ? intval( $_POST['banner_image_id'] ) : 0,
-        'link_url'   => isset( $_POST['banner_link_url'] ) ? esc_url_raw( wp_unslash( $_POST['banner_link_url'] ) ) : '',
-        'active'     => isset( $_POST['banner_active'] ) ? true : false,
-        'sort_order' => isset( $_POST['banner_sort_order'] ) ? intval( $_POST['banner_sort_order'] ) : 0,
-        'clicks'     => 0,
-    );
+    $banners = get_option( 'lfciath_banners', array() );
 
-    $banners   = get_option( 'lfciath_banners', array() );
-    $banners[] = $data;
+    if ( $banner_id ) {
+        // แก้ไข banner ที่มีอยู่
+        foreach ( $banners as $idx => $b ) {
+            if ( isset( $b['id'] ) && $b['id'] === $banner_id ) {
+                $banners[ $idx ]['title']      = isset( $_POST['banner_title'] ) ? sanitize_text_field( wp_unslash( $_POST['banner_title'] ) ) : '';
+                $banners[ $idx ]['image_id']   = isset( $_POST['banner_image_id'] ) ? intval( $_POST['banner_image_id'] ) : 0;
+                $banners[ $idx ]['link_url']   = isset( $_POST['banner_link_url'] ) ? esc_url_raw( wp_unslash( $_POST['banner_link_url'] ) ) : '';
+                $banners[ $idx ]['active']     = isset( $_POST['banner_active'] ) ? true : false;
+                $banners[ $idx ]['sort_order'] = isset( $_POST['banner_sort_order'] ) ? intval( $_POST['banner_sort_order'] ) : 0;
+                break;
+            }
+        }
+    } else {
+        // สร้างใหม่
+        $data = array(
+            'id'         => uniqid( 'b_' ),
+            'title'      => isset( $_POST['banner_title'] ) ? sanitize_text_field( wp_unslash( $_POST['banner_title'] ) ) : '',
+            'image_id'   => isset( $_POST['banner_image_id'] ) ? intval( $_POST['banner_image_id'] ) : 0,
+            'link_url'   => isset( $_POST['banner_link_url'] ) ? esc_url_raw( wp_unslash( $_POST['banner_link_url'] ) ) : '',
+            'active'     => isset( $_POST['banner_active'] ) ? true : false,
+            'sort_order' => isset( $_POST['banner_sort_order'] ) ? intval( $_POST['banner_sort_order'] ) : 0,
+            'clicks'     => 0,
+        );
+        $banners[] = $data;
+    }
+
     update_option( 'lfciath_banners', $banners );
 
     wp_redirect( add_query_arg( array( 'view' => 'banners', 'msg' => 'banner_saved' ), $redirect_base ) );
