@@ -93,9 +93,22 @@ function lfciath_cc_menu() {
             ),
         ),
         array(
+            'group' => 'นัดต่อไป',
+            'items' => array(
+                array( 'slug' => 'create-fixture', 'icon' => 'dashicons-calendar', 'label' => 'เพิ่มนัดต่อไป' ),
+                array( 'slug' => 'list-fixtures', 'icon' => 'dashicons-schedule', 'label' => 'ตารางนัดต่อไป' ),
+            ),
+        ),
+        array(
             'group' => 'โปรโมท',
             'items' => array(
                 array( 'slug' => 'banners', 'icon' => 'dashicons-format-image', 'label' => 'จัดการแบนเนอร์' ),
+            ),
+        ),
+        array(
+            'group' => 'ตั้งค่า',
+            'items' => array(
+                array( 'slug' => 'settings', 'icon' => 'dashicons-admin-settings', 'label' => 'ตั้งค่าทั่วไป' ),
             ),
         ),
     ));
@@ -110,10 +123,14 @@ function lfciath_cc_view_title( $view ) {
         'create-news'  => 'สร้างข่าวใหม่',
         'edit-news'    => 'แก้ไขข่าว',
         'list-news'    => 'ข่าวทั้งหมด',
-        'create-match' => 'เพิ่มผลแข่งขัน',
-        'edit-match'   => 'แก้ไขผลแข่งขัน',
-        'list-matches' => 'ผลแข่งขันทั้งหมด',
-        'banners'      => 'จัดการแบนเนอร์',
+        'create-match'   => 'เพิ่มผลแข่งขัน',
+        'edit-match'     => 'แก้ไขผลแข่งขัน',
+        'list-matches'   => 'ผลแข่งขันทั้งหมด',
+        'create-fixture' => 'เพิ่มนัดต่อไป',
+        'edit-fixture'   => 'แก้ไขนัดต่อไป',
+        'list-fixtures'  => 'ตารางนัดต่อไป',
+        'banners'        => 'จัดการแบนเนอร์',
+        'settings'       => 'ตั้งค่าทั่วไป',
     );
     return isset( $map[ $view ] ) ? $map[ $view ] : 'Dashboard';
 }
@@ -141,7 +158,7 @@ function lfciath_cc_render( $view, $base_url ) {
                 <div class="lfciath-cc-nav-group">
                     <div class="lfciath-cc-nav-group-label"><?php echo esc_html( $group['group'] ); ?></div>
                     <?php foreach ( $group['items'] as $item ) :
-                        $is_active = ( $view === $item['slug'] ) || ( $view === 'edit-news' && $item['slug'] === 'list-news' ) || ( $view === 'edit-match' && $item['slug'] === 'list-matches' );
+                        $is_active = ( $view === $item['slug'] ) || ( $view === 'edit-news' && $item['slug'] === 'list-news' ) || ( $view === 'edit-match' && $item['slug'] === 'list-matches' ) || ( $view === 'edit-fixture' && $item['slug'] === 'list-fixtures' );
                     ?>
                     <a href="<?php echo esc_url( add_query_arg( 'view', $item['slug'], $cc_url ) ); ?>"
                        class="lfciath-cc-nav-item <?php echo $is_active ? 'active' : ''; ?>">
@@ -216,9 +233,25 @@ function lfciath_cc_render( $view, $base_url ) {
                             lfciath_cc_view_list_matches( $cc_url );
                         }
                         break;
+                    case 'create-fixture':
+                    case 'edit-fixture':
+                        if ( function_exists( 'lfciath_cc_view_fixture_form' ) ) {
+                            lfciath_cc_view_fixture_form( $cc_url, $view );
+                        }
+                        break;
+                    case 'list-fixtures':
+                        if ( function_exists( 'lfciath_cc_view_list_fixtures' ) ) {
+                            lfciath_cc_view_list_fixtures( $cc_url );
+                        }
+                        break;
                     case 'banners':
                         if ( function_exists( 'lfciath_cc_view_banners' ) ) {
                             lfciath_cc_view_banners( $cc_url );
+                        }
+                        break;
+                    case 'settings':
+                        if ( function_exists( 'lfciath_cc_view_settings' ) ) {
+                            lfciath_cc_view_settings( $cc_url );
                         }
                         break;
                     default:

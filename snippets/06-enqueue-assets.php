@@ -499,6 +499,36 @@ function lfciath_get_news_css() {
 .lfciath-featured-excerpt { font-family: var(--lfc-font-thai); font-size: 14px; color: var(--lfc-gray-mid); line-height: 1.7; margin: 0 0 12px; }
 .lfciath-featured-date { font-size: 13px; color: var(--lfc-gray-mid); font-family: var(--lfc-font-thai); }
 
+/* NEWS ARCHIVE - Match Results + Fixtures */
+.lfciath-match-section { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px; }
+.lfciath-match-panel { background: var(--lfc-white); border-radius: var(--lfc-radius); box-shadow: var(--lfc-shadow); overflow: hidden; }
+.lfciath-match-panel-header { background: #1e293b; color: #fff; padding: 14px 20px; font-family: var(--lfc-font-thai); font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+.lfciath-match-panel-header svg { flex-shrink: 0; }
+.lfciath-fixture-header { background: var(--lfc-red); }
+.lfciath-match-panel-body { padding: 0; }
+.lfciath-match-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; transition: background 0.2s; }
+.lfciath-match-row:last-child { border-bottom: none; }
+.lfciath-match-row:hover { background: #f8fafc; }
+.lfciath-match-date { font-size: 12px; color: #64748b; min-width: 45px; text-align: center; font-family: var(--lfc-font-thai); line-height: 1.3; }
+.lfciath-match-date small { display: block; font-size: 10px; color: #94a3b8; }
+.lfciath-match-teams { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.lfciath-match-team { display: flex; align-items: center; gap: 6px; font-family: var(--lfc-font-thai); font-size: 13px; font-weight: 600; }
+.lfciath-match-team.home { justify-content: flex-end; flex: 1; color: var(--lfc-red); }
+.lfciath-match-team.away { justify-content: flex-start; flex: 1; color: var(--lfc-black); }
+.lfciath-match-team img { width: 24px; height: 24px; object-fit: contain; border-radius: 4px; }
+.lfciath-match-score { font-size: 18px; font-weight: 800; min-width: 55px; text-align: center; font-family: var(--lfc-font-en); }
+.lfciath-match-vs { font-size: 14px; font-weight: 700; color: #94a3b8; min-width: 40px; text-align: center; font-family: var(--lfc-font-en); }
+.lfciath-match-result { font-size: 11px; font-weight: 700; min-width: 40px; text-align: center; padding: 3px 8px; border-radius: 4px; font-family: var(--lfc-font-thai); }
+.lfciath-result-win { background: #dcfce7; color: #166534; }
+.lfciath-result-loss { background: #fef2f2; color: #991b1b; }
+.lfciath-result-draw { background: #f1f5f9; color: #475569; }
+.lfciath-match-win { border-left: 3px solid #22c55e; }
+.lfciath-match-loss { border-left: 3px solid #ef4444; }
+.lfciath-match-draw { border-left: 3px solid #94a3b8; }
+.lfciath-match-upcoming { border-left: 3px solid var(--lfc-red); }
+.lfciath-match-meta-info { font-size: 11px; color: #64748b; min-width: 50px; text-align: center; font-family: var(--lfc-font-thai); line-height: 1.4; }
+.lfciath-match-meta-info small { display: block; }
+
 /* NEWS ARCHIVE - Card Grid */
 .lfciath-news-grid { display: grid; gap: 24px; margin-bottom: 40px; }
 .lfciath-news-grid.columns-2 { grid-template-columns: repeat(2, 1fr); }
@@ -544,6 +574,9 @@ function lfciath_get_news_css() {
     .lfciath-news-banners-list { flex-direction: row; overflow-x: auto; max-height: none; }
     .lfciath-banner-item { min-width: 200px; flex-shrink: 0; }
     .lfciath-featured-link { grid-template-columns: 1fr; }
+    .lfciath-match-section { grid-template-columns: 1fr; }
+    .lfciath-match-team span { font-size: 11px; }
+    .lfciath-match-score { font-size: 16px; min-width: 45px; }
     .lfciath-news-grid.columns-3, .lfciath-news-grid.columns-4 { grid-template-columns: repeat(2, 1fr); }
     .lfciath-related-grid { grid-template-columns: repeat(2, 1fr); }
     .lfciath-news-gallery-grid { grid-template-columns: repeat(2, 1fr); }

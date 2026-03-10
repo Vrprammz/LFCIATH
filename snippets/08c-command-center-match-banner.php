@@ -502,3 +502,335 @@ function lfciath_match_results_shortcode( $atts ) {
     return $out;
 }
 add_shortcode( 'lfciath_match_results', 'lfciath_match_results_shortcode' );
+
+// ========================================
+// Settings View (โลโก้ทีมเรา)
+// ========================================
+function lfciath_cc_view_settings( $base_url ) {
+    $settings  = get_option( 'lfciath_settings', array() );
+    $logo_id   = isset( $settings['team_logo'] ) ? intval( $settings['team_logo'] ) : 0;
+    $logo_url  = $logo_id ? wp_get_attachment_image_url( $logo_id, 'medium' ) : '';
+    ?>
+
+    <div class="lfciath-cc-card" style="max-width:600px;">
+        <div class="lfciath-cc-card-header"><span class="dashicons dashicons-admin-settings"></span> ตั้งค่าทั่วไป</div>
+        <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+            <input type="hidden" name="action" value="lfciath_cc_save_settings" />
+            <input type="hidden" name="lfciath_redirect_base" value="<?php echo esc_url( $base_url ); ?>" />
+            <?php wp_nonce_field( 'lfciath_cc_save_settings', 'lfciath_cc_settings_nonce' ); ?>
+
+            <label class="lfciath-cc-label">โลโก้ทีม LFC IA Thailand</label>
+            <p style="font-size:12px;color:#64748b;margin:0 0 8px;">ใช้แสดงในหน้าผลแข่งขันและตารางนัดต่อไป</p>
+            <div id="lfciath-cc-team-logo-preview" style="margin-bottom:8px;<?php echo $logo_url ? '' : 'display:none;'; ?>">
+                <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" /><?php endif; ?>
+            </div>
+            <input type="hidden" name="team_logo_id" id="lfciath-cc-team-logo-id" value="<?php echo esc_attr( $logo_id ); ?>" />
+            <button type="button" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm" id="lfciath-cc-team-logo-upload">เลือกโลโก้</button>
+            <button type="button" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm" id="lfciath-cc-team-logo-remove" style="<?php echo $logo_id ? '' : 'display:none;'; ?>margin-left:4px;">ลบ</button>
+
+            <div style="margin-top:24px;">
+                <button type="submit" class="lfciath-cc-btn lfciath-cc-btn-primary">บันทึกตั้งค่า</button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+    jQuery(document).ready(function($) {
+        $('#lfciath-cc-team-logo-upload').on('click', function(e) {
+            e.preventDefault();
+            var frame = wp.media({ title: 'เลือกโลโก้ทีม', multiple: false, library: { type: 'image' } });
+            frame.on('select', function() {
+                var a = frame.state().get('selection').first().toJSON();
+                $('#lfciath-cc-team-logo-id').val(a.id);
+                $('#lfciath-cc-team-logo-preview').html('<img src="'+a.url+'" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" />').show();
+                $('#lfciath-cc-team-logo-remove').show();
+            });
+            frame.open();
+        });
+        $('#lfciath-cc-team-logo-remove').on('click', function() {
+            $('#lfciath-cc-team-logo-id').val('');
+            $('#lfciath-cc-team-logo-preview').hide().html('');
+            $(this).hide();
+        });
+    });
+    </script>
+    <?php
+}
+
+// Form Handler: บันทึกตั้งค่า
+function lfciath_handle_cc_save_settings() {
+    if ( ! isset( $_POST['lfciath_cc_settings_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['lfciath_cc_settings_nonce'] ) ), 'lfciath_cc_save_settings' ) ) {
+        wp_die( 'Nonce ไม่ถูกต้อง' );
+    }
+    if ( ! current_user_can( 'edit_posts' ) ) {
+        wp_die( 'ไม่มีสิทธิ์' );
+    }
+
+    $redirect_base = isset( $_POST['lfciath_redirect_base'] ) ? esc_url_raw( wp_unslash( $_POST['lfciath_redirect_base'] ) ) : home_url();
+
+    $settings = get_option( 'lfciath_settings', array() );
+    $settings['team_logo'] = isset( $_POST['team_logo_id'] ) ? intval( $_POST['team_logo_id'] ) : 0;
+    update_option( 'lfciath_settings', $settings );
+
+    wp_redirect( add_query_arg( array( 'view' => 'settings', 'msg' => 'settings_saved' ), $redirect_base ) );
+    exit;
+}
+add_action( 'admin_post_lfciath_cc_save_settings', 'lfciath_handle_cc_save_settings' );
+
+// ========================================
+// Fixtures: ฟอร์มสร้าง/แก้ไขนัดต่อไป
+// ========================================
+function lfciath_cc_view_fixture_form( $base_url, $view ) {
+    $fixture    = null;
+    $fixture_id = '';
+
+    if ( 'edit-fixture' === $view && isset( $_GET['id'] ) ) {
+        $fixture_id = sanitize_text_field( wp_unslash( $_GET['id'] ) );
+        $fixtures   = get_option( 'lfciath_fixtures', array() );
+        foreach ( $fixtures as $f ) {
+            if ( isset( $f['id'] ) && $f['id'] === $fixture_id ) {
+                $fixture = $f;
+                break;
+            }
+        }
+        if ( ! $fixture ) {
+            echo '<div class="lfciath-cc-notice lfciath-cc-notice-error">ไม่พบนัดนี้</div>';
+            return;
+        }
+    }
+
+    $v_date     = $fixture ? ( $fixture['match_date'] ?? '' ) : '';
+    $v_time     = $fixture ? ( $fixture['match_time'] ?? '' ) : '';
+    $v_comp     = $fixture ? ( $fixture['competition'] ?? '' ) : '';
+    $v_age      = $fixture ? ( $fixture['age_group'] ?? '' ) : '';
+    $v_opp_name = $fixture ? ( $fixture['opponent_name'] ?? '' ) : '';
+    $v_opp_logo = $fixture ? ( $fixture['opponent_logo'] ?? 0 ) : 0;
+    $v_venue    = $fixture ? ( $fixture['venue'] ?? '' ) : '';
+    $v_notes    = $fixture ? ( $fixture['notes'] ?? '' ) : '';
+
+    $logo_url = $v_opp_logo ? wp_get_attachment_image_url( $v_opp_logo, 'thumbnail' ) : '';
+    $age_groups = array( 'U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'Senior' );
+    ?>
+
+    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+        <input type="hidden" name="action" value="lfciath_cc_save_fixture" />
+        <input type="hidden" name="lfciath_fixture_id" value="<?php echo esc_attr( $fixture_id ); ?>" />
+        <input type="hidden" name="lfciath_redirect_base" value="<?php echo esc_url( $base_url ); ?>" />
+        <?php wp_nonce_field( 'lfciath_cc_save_fixture', 'lfciath_cc_fixture_nonce' ); ?>
+
+        <div style="max-width:700px;">
+            <div class="lfciath-cc-card">
+                <div class="lfciath-cc-card-header"><span class="dashicons dashicons-calendar"></span> ข้อมูลนัดแข่ง</div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                    <div>
+                        <label class="lfciath-cc-label">วันที่ *</label>
+                        <input type="date" name="fixture_date" value="<?php echo esc_attr( $v_date ); ?>" class="lfciath-cc-input" required />
+                    </div>
+                    <div>
+                        <label class="lfciath-cc-label">เวลา</label>
+                        <input type="time" name="fixture_time" value="<?php echo esc_attr( $v_time ); ?>" class="lfciath-cc-input" />
+                    </div>
+                </div>
+
+                <label class="lfciath-cc-label">รายการแข่งขัน *</label>
+                <input type="text" name="fixture_competition" value="<?php echo esc_attr( $v_comp ); ?>" class="lfciath-cc-input" placeholder="เช่น Thailand Youth League" required style="margin-bottom:12px;" />
+
+                <label class="lfciath-cc-label">รุ่นอายุ *</label>
+                <select name="fixture_age_group" class="lfciath-cc-input" required style="margin-bottom:12px;">
+                    <option value="">เลือกรุ่น</option>
+                    <?php foreach ( $age_groups as $ag ) : ?>
+                    <option value="<?php echo esc_attr( $ag ); ?>" <?php selected( $v_age, $ag ); ?>><?php echo esc_html( $ag ); ?></option>
+                    <?php endforeach; ?>
+                </select>
+
+                <label class="lfciath-cc-label">สนามแข่ง</label>
+                <input type="text" name="fixture_venue" value="<?php echo esc_attr( $v_venue ); ?>" class="lfciath-cc-input" placeholder="เช่น สนาม XYZ" style="margin-bottom:12px;" />
+            </div>
+
+            <div class="lfciath-cc-card">
+                <div class="lfciath-cc-card-header"><span class="dashicons dashicons-groups"></span> ทีมคู่แข่ง</div>
+
+                <label class="lfciath-cc-label">ชื่อทีมคู่แข่ง *</label>
+                <input type="text" name="fixture_opponent_name" value="<?php echo esc_attr( $v_opp_name ); ?>" class="lfciath-cc-input" placeholder="เช่น Bangkok United Academy" required style="margin-bottom:12px;" />
+
+                <label class="lfciath-cc-label">โลโก้คู่แข่ง</label>
+                <div id="lfciath-cc-fix-logo-preview" style="margin-bottom:8px;<?php echo $logo_url ? '' : 'display:none;'; ?>">
+                    <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" /><?php endif; ?>
+                </div>
+                <input type="hidden" name="fixture_opponent_logo" id="lfciath-cc-fix-logo-id" value="<?php echo esc_attr( $v_opp_logo ); ?>" />
+                <button type="button" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm" id="lfciath-cc-fix-logo-upload">เลือกโลโก้</button>
+                <button type="button" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm" id="lfciath-cc-fix-logo-remove" style="<?php echo $v_opp_logo ? '' : 'display:none;'; ?>margin-left:4px;">ลบ</button>
+            </div>
+
+            <div class="lfciath-cc-card">
+                <label class="lfciath-cc-label">หมายเหตุ (ไม่บังคับ)</label>
+                <textarea name="fixture_notes" class="lfciath-cc-input" rows="3" placeholder="บันทึกเพิ่มเติม..."><?php echo esc_textarea( $v_notes ); ?></textarea>
+            </div>
+
+            <button type="submit" class="lfciath-cc-btn lfciath-cc-btn-primary lfciath-cc-btn-block">
+                <?php echo $fixture ? 'อัปเดตนัดต่อไป' : 'บันทึกนัดต่อไป'; ?>
+            </button>
+        </div>
+    </form>
+
+    <script>
+    jQuery(document).ready(function($) {
+        $('#lfciath-cc-fix-logo-upload').on('click', function(e) {
+            e.preventDefault();
+            var frame = wp.media({ title: 'เลือกโลโก้คู่แข่ง', multiple: false, library: { type: 'image' } });
+            frame.on('select', function() {
+                var a = frame.state().get('selection').first().toJSON();
+                $('#lfciath-cc-fix-logo-id').val(a.id);
+                $('#lfciath-cc-fix-logo-preview').html('<img src="'+a.url+'" style="width:60px;height:60px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;" />').show();
+                $('#lfciath-cc-fix-logo-remove').show();
+            });
+            frame.open();
+        });
+        $('#lfciath-cc-fix-logo-remove').on('click', function() {
+            $('#lfciath-cc-fix-logo-id').val('');
+            $('#lfciath-cc-fix-logo-preview').hide().html('');
+            $(this).hide();
+        });
+    });
+    </script>
+    <?php
+}
+
+// ========================================
+// List Fixtures View
+// ========================================
+function lfciath_cc_view_list_fixtures( $base_url ) {
+    $fixtures = get_option( 'lfciath_fixtures', array() );
+    usort( $fixtures, function( $a, $b ) { return strcmp( $a['match_date'] ?? '', $b['match_date'] ?? '' ); } );
+    // แสดงเฉพาะนัดที่ยังไม่ผ่าน
+    $today = wp_date( 'Y-m-d' );
+    ?>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <a href="<?php echo esc_url( add_query_arg( 'view', 'create-fixture', $base_url ) ); ?>" class="lfciath-cc-btn lfciath-cc-btn-primary">+ เพิ่มนัดต่อไป</a>
+        <span style="color:#64748b;font-size:13px;">ทั้งหมด <?php echo esc_html( count( $fixtures ) ); ?> นัด</span>
+    </div>
+
+    <div class="lfciath-cc-card" style="padding:0;overflow:hidden;">
+        <table class="lfciath-cc-table">
+            <thead>
+                <tr>
+                    <th>วันที่</th>
+                    <th>เวลา</th>
+                    <th>รายการ</th>
+                    <th>รุ่น</th>
+                    <th>คู่แข่ง</th>
+                    <th>สนาม</th>
+                    <th>สถานะ</th>
+                    <th style="width:120px;">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if ( ! empty( $fixtures ) ) : foreach ( $fixtures as $f ) :
+                $fid      = $f['id'] ?? '';
+                $logo_url = ! empty( $f['opponent_logo'] ) ? wp_get_attachment_image_url( $f['opponent_logo'], 'thumbnail' ) : '';
+                $is_past  = ( $f['match_date'] ?? '' ) < $today;
+                $del_url  = wp_nonce_url(
+                    add_query_arg( array( 'action' => 'lfciath_cc_delete_fixture', 'id' => $fid, 'redirect_base' => rawurlencode( $base_url ) ), admin_url( 'admin-post.php' ) ),
+                    'lfciath_cc_delete_fixture_' . $fid
+                );
+            ?>
+            <tr style="<?php echo $is_past ? 'opacity:0.5;' : ''; ?>">
+                <td style="font-size:12px;white-space:nowrap;"><?php echo esc_html( $f['match_date'] ?? '' ); ?></td>
+                <td style="font-size:13px;"><?php echo esc_html( $f['match_time'] ?? '-' ); ?></td>
+                <td style="font-size:13px;"><?php echo esc_html( $f['competition'] ?? '' ); ?></td>
+                <td><span class="lfciath-cc-badge lfciath-cc-badge-gray"><?php echo esc_html( $f['age_group'] ?? '' ); ?></span></td>
+                <td style="display:flex;align-items:center;gap:8px;">
+                    <?php if ( $logo_url ) : ?><img src="<?php echo esc_url( $logo_url ); ?>" style="width:28px;height:28px;object-fit:contain;border-radius:4px;" /><?php endif; ?>
+                    <?php echo esc_html( $f['opponent_name'] ?? '' ); ?>
+                </td>
+                <td style="font-size:12px;color:#64748b;"><?php echo esc_html( $f['venue'] ?? '-' ); ?></td>
+                <td>
+                    <?php echo $is_past
+                        ? '<span class="lfciath-cc-badge lfciath-cc-badge-gray">ผ่านแล้ว</span>'
+                        : '<span class="lfciath-cc-badge lfciath-cc-badge-green">กำลังจะมา</span>'; ?>
+                </td>
+                <td>
+                    <a href="<?php echo esc_url( add_query_arg( array( 'view' => 'edit-fixture', 'id' => $fid ), $base_url ) ); ?>" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm">แก้ไข</a>
+                    <a href="<?php echo esc_url( $del_url ); ?>" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm lfciath-cc-delete-link" style="margin-left:4px;">ลบ</a>
+                </td>
+            </tr>
+            <?php endforeach; else : ?>
+            <tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8;">ยังไม่มีนัดต่อไป — <a href="<?php echo esc_url( add_query_arg( 'view', 'create-fixture', $base_url ) ); ?>">เพิ่มนัดต่อไป</a></td></tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+}
+
+// ========================================
+// Form Handler: บันทึกนัดต่อไป
+// ========================================
+function lfciath_handle_cc_save_fixture() {
+    if ( ! isset( $_POST['lfciath_cc_fixture_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['lfciath_cc_fixture_nonce'] ) ), 'lfciath_cc_save_fixture' ) ) {
+        wp_die( 'Nonce ไม่ถูกต้อง' );
+    }
+    if ( ! current_user_can( 'edit_posts' ) ) {
+        wp_die( 'ไม่มีสิทธิ์' );
+    }
+
+    $redirect_base = isset( $_POST['lfciath_redirect_base'] ) ? esc_url_raw( wp_unslash( $_POST['lfciath_redirect_base'] ) ) : home_url();
+    $fixture_id    = isset( $_POST['lfciath_fixture_id'] ) ? sanitize_text_field( wp_unslash( $_POST['lfciath_fixture_id'] ) ) : '';
+
+    $data = array(
+        'id'            => $fixture_id ?: uniqid( 'f_' ),
+        'match_date'    => isset( $_POST['fixture_date'] ) ? sanitize_text_field( wp_unslash( $_POST['fixture_date'] ) ) : '',
+        'match_time'    => isset( $_POST['fixture_time'] ) ? sanitize_text_field( wp_unslash( $_POST['fixture_time'] ) ) : '',
+        'competition'   => isset( $_POST['fixture_competition'] ) ? sanitize_text_field( wp_unslash( $_POST['fixture_competition'] ) ) : '',
+        'age_group'     => isset( $_POST['fixture_age_group'] ) ? sanitize_text_field( wp_unslash( $_POST['fixture_age_group'] ) ) : '',
+        'opponent_name' => isset( $_POST['fixture_opponent_name'] ) ? sanitize_text_field( wp_unslash( $_POST['fixture_opponent_name'] ) ) : '',
+        'opponent_logo' => isset( $_POST['fixture_opponent_logo'] ) ? intval( $_POST['fixture_opponent_logo'] ) : 0,
+        'venue'         => isset( $_POST['fixture_venue'] ) ? sanitize_text_field( wp_unslash( $_POST['fixture_venue'] ) ) : '',
+        'notes'         => isset( $_POST['fixture_notes'] ) ? sanitize_textarea_field( wp_unslash( $_POST['fixture_notes'] ) ) : '',
+    );
+
+    $fixtures = get_option( 'lfciath_fixtures', array() );
+
+    if ( $fixture_id ) {
+        foreach ( $fixtures as $idx => $f ) {
+            if ( isset( $f['id'] ) && $f['id'] === $fixture_id ) {
+                $fixtures[ $idx ] = $data;
+                break;
+            }
+        }
+    } else {
+        $fixtures[] = $data;
+    }
+
+    update_option( 'lfciath_fixtures', $fixtures );
+
+    wp_redirect( add_query_arg( array( 'view' => 'list-fixtures', 'msg' => 'fixture_saved' ), $redirect_base ) );
+    exit;
+}
+add_action( 'admin_post_lfciath_cc_save_fixture', 'lfciath_handle_cc_save_fixture' );
+
+// ========================================
+// Form Handler: ลบนัดต่อไป
+// ========================================
+function lfciath_handle_cc_delete_fixture() {
+    $fid = isset( $_GET['id'] ) ? sanitize_text_field( wp_unslash( $_GET['id'] ) ) : '';
+    if ( ! wp_verify_nonce( isset( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '', 'lfciath_cc_delete_fixture_' . $fid ) ) {
+        wp_die( 'Nonce ไม่ถูกต้อง' );
+    }
+    if ( ! current_user_can( 'edit_posts' ) ) {
+        wp_die( 'ไม่มีสิทธิ์' );
+    }
+
+    $redirect_base = isset( $_GET['redirect_base'] ) ? esc_url_raw( rawurldecode( wp_unslash( $_GET['redirect_base'] ) ) ) : home_url();
+    $fixtures      = get_option( 'lfciath_fixtures', array() );
+    $fixtures      = array_values( array_filter( $fixtures, function( $f ) use ( $fid ) {
+        return ! isset( $f['id'] ) || $f['id'] !== $fid;
+    }));
+    update_option( 'lfciath_fixtures', $fixtures );
+
+    wp_redirect( add_query_arg( array( 'view' => 'list-fixtures', 'msg' => 'fixture_deleted' ), $redirect_base ) );
+    exit;
+}
+add_action( 'admin_post_lfciath_cc_delete_fixture', 'lfciath_handle_cc_delete_fixture' );

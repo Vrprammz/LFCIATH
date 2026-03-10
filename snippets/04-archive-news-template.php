@@ -267,6 +267,108 @@ function lfciath_build_news_archive( $atts ) {
         endif;
         ?>
 
+        <!-- Match Results + Upcoming Fixtures -->
+        <?php if ( $paged === 1 ) :
+            $all_matches  = get_option( 'lfciath_matches', array() );
+            $all_fixtures = get_option( 'lfciath_fixtures', array() );
+            $settings     = get_option( 'lfciath_settings', array() );
+            $team_logo_id = isset( $settings['team_logo'] ) ? intval( $settings['team_logo'] ) : 0;
+            $team_logo    = $team_logo_id ? wp_get_attachment_image_url( $team_logo_id, 'thumbnail' ) : '';
+
+            // ผลแข่งขันล่าสุด 5 นัด
+            usort( $all_matches, function( $a, $b ) { return strcmp( $b['match_date'] ?? '', $a['match_date'] ?? '' ); } );
+            $recent_matches = array_slice( $all_matches, 0, 5 );
+
+            // นัดต่อไปที่ยังไม่ผ่าน
+            $today = wp_date( 'Y-m-d' );
+            $upcoming = array_filter( $all_fixtures, function( $f ) use ( $today ) {
+                return ( $f['match_date'] ?? '' ) >= $today;
+            });
+            usort( $upcoming, function( $a, $b ) { return strcmp( $a['match_date'] ?? '', $b['match_date'] ?? '' ); } );
+            $upcoming = array_slice( $upcoming, 0, 5 );
+
+            if ( ! empty( $recent_matches ) || ! empty( $upcoming ) ) :
+        ?>
+        <div class="lfciath-match-section">
+            <?php if ( ! empty( $recent_matches ) ) : ?>
+            <div class="lfciath-match-panel">
+                <div class="lfciath-match-panel-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    ผลการแข่งขันล่าสุด
+                </div>
+                <div class="lfciath-match-panel-body">
+                    <?php foreach ( $recent_matches as $m ) :
+                        $opp_logo = ! empty( $m['opponent_logo'] ) ? wp_get_attachment_image_url( $m['opponent_logo'], 'thumbnail' ) : '';
+                        $r = $m['result'] ?? 'D';
+                        $r_class = $r === 'W' ? 'win' : ( $r === 'L' ? 'loss' : 'draw' );
+                        $r_text  = $r === 'W' ? 'ชนะ' : ( $r === 'L' ? 'แพ้' : 'เสมอ' );
+                    ?>
+                    <div class="lfciath-match-row lfciath-match-<?php echo esc_attr( $r_class ); ?>">
+                        <div class="lfciath-match-date">
+                            <?php echo esc_html( wp_date( 'd/m', strtotime( $m['match_date'] ?? '' ) ) ); ?>
+                            <small><?php echo esc_html( $m['age_group'] ?? '' ); ?></small>
+                        </div>
+                        <div class="lfciath-match-teams">
+                            <div class="lfciath-match-team home">
+                                <?php if ( $team_logo ) : ?><img src="<?php echo esc_url( $team_logo ); ?>" alt="LFCIATH" /><?php endif; ?>
+                                <span>LFC IA TH</span>
+                            </div>
+                            <div class="lfciath-match-score">
+                                <?php echo esc_html( $m['score_home'] ?? 0 ); ?> - <?php echo esc_html( $m['score_away'] ?? 0 ); ?>
+                            </div>
+                            <div class="lfciath-match-team away">
+                                <span><?php echo esc_html( $m['opponent_name'] ?? '' ); ?></span>
+                                <?php if ( $opp_logo ) : ?><img src="<?php echo esc_url( $opp_logo ); ?>" alt="" /><?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="lfciath-match-result lfciath-result-<?php echo esc_attr( $r_class ); ?>"><?php echo esc_html( $r_text ); ?></div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php if ( ! empty( $upcoming ) ) : ?>
+            <div class="lfciath-match-panel">
+                <div class="lfciath-match-panel-header lfciath-fixture-header">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ตารางการแข่งขันนัดต่อไป
+                </div>
+                <div class="lfciath-match-panel-body">
+                    <?php foreach ( $upcoming as $f ) :
+                        $opp_logo = ! empty( $f['opponent_logo'] ) ? wp_get_attachment_image_url( $f['opponent_logo'], 'thumbnail' ) : '';
+                    ?>
+                    <div class="lfciath-match-row lfciath-match-upcoming">
+                        <div class="lfciath-match-date">
+                            <?php echo esc_html( wp_date( 'd/m', strtotime( $f['match_date'] ?? '' ) ) ); ?>
+                            <small><?php echo esc_html( $f['match_time'] ?? '' ); ?></small>
+                        </div>
+                        <div class="lfciath-match-teams">
+                            <div class="lfciath-match-team home">
+                                <?php if ( $team_logo ) : ?><img src="<?php echo esc_url( $team_logo ); ?>" alt="LFCIATH" /><?php endif; ?>
+                                <span>LFC IA TH</span>
+                            </div>
+                            <div class="lfciath-match-vs">VS</div>
+                            <div class="lfciath-match-team away">
+                                <span><?php echo esc_html( $f['opponent_name'] ?? '' ); ?></span>
+                                <?php if ( $opp_logo ) : ?><img src="<?php echo esc_url( $opp_logo ); ?>" alt="" /><?php endif; ?>
+                            </div>
+                        </div>
+                        <div class="lfciath-match-meta-info">
+                            <small><?php echo esc_html( $f['age_group'] ?? '' ); ?></small>
+                            <?php if ( ! empty( $f['venue'] ) ) : ?><small><?php echo esc_html( $f['venue'] ); ?></small><?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php
+            endif;
+        endif;
+        ?>
+
         <!-- News Grid -->
         <?php if ( $query->have_posts() ) : ?>
         <div class="lfciath-news-grid columns-<?php echo esc_attr( $atts['columns'] ); ?>">
