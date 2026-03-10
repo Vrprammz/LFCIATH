@@ -52,7 +52,7 @@ function lfciath_render_full_archive_page() {
     }
     ?>
 
-    <div class="lfciath-archive-page" style="min-height: 60vh; background: #fff;">
+    <div class="lfciath-archive-page" style="min-height: 60vh; background: #f8fafc;">
         <?php echo $archive_html; ?>
     </div>
 
@@ -161,40 +161,33 @@ function lfciath_build_news_archive( $atts ) {
 
     <div class="lfciath-news-archive">
 
-        <!-- Page Header with Quick Stats -->
-        <div class="lfciath-news-archive-header">
-            <h1 class="lfciath-news-archive-title">ข่าวสารและกิจกรรม</h1>
-            <p class="lfciath-news-archive-desc">ติดตามข่าวสาร กิจกรรม และความเคลื่อนไหวล่าสุดจาก Liverpool FC International Academy Thailand</p>
-            <div class="lfciath-header-stats">
-                <div class="lfciath-header-stat">
-                    <span class="lfciath-header-stat-number"><?php echo esc_html( $total_count ); ?></span>
-                    <span class="lfciath-header-stat-label">ข่าวทั้งหมด</span>
-                </div>
-                <span class="lfciath-header-stat-divider"></span>
-                <div class="lfciath-header-stat">
-                    <span class="lfciath-header-stat-number"><?php echo esc_html( $cat_count ); ?></span>
-                    <span class="lfciath-header-stat-label">หมวดหมู่</span>
-                </div>
-                <span class="lfciath-header-stat-divider"></span>
-                <div class="lfciath-header-stat">
-                    <span class="lfciath-header-stat-number"><?php echo esc_html( $latest_date ); ?></span>
-                    <span class="lfciath-header-stat-label">อัปเดตล่าสุด</span>
-                </div>
+        <!-- App Bar Header -->
+        <div class="lfciath-app-bar">
+            <div class="lfciath-app-bar-left">
+                <span class="lfciath-app-bar-dot"></span>
+                <h1 class="lfciath-app-bar-title">ข่าวสารและกิจกรรม</h1>
+            </div>
+            <div class="lfciath-app-bar-right">
+                <span class="lfciath-app-bar-stat"><?php echo esc_html( $total_count ); ?> ข่าว</span>
+                <span class="lfciath-app-bar-divider"></span>
+                <span class="lfciath-app-bar-stat"><?php echo esc_html( $cat_count ); ?> หมวด</span>
+                <span class="lfciath-app-bar-divider"></span>
+                <span class="lfciath-app-bar-stat">อัปเดต <?php echo esc_html( $latest_date ); ?></span>
             </div>
         </div>
 
-        <!-- Category Filter -->
+        <!-- Category Tabs -->
         <?php if ( $atts['show_filter'] === 'yes' && $categories && ! is_wp_error( $categories ) ) : ?>
-        <div class="lfciath-news-filter">
+        <div class="lfciath-tab-bar">
             <a href="<?php echo esc_url( get_post_type_archive_link( 'lfciath_news' ) ); ?>"
-               class="lfciath-filter-btn <?php echo empty( $active_cat ) ? 'active' : ''; ?>">
+               class="lfciath-tab <?php echo empty( $active_cat ) ? 'active' : ''; ?>">
                 ทั้งหมด
             </a>
             <?php foreach ( $categories as $cat ) : ?>
                 <a href="<?php echo esc_url( add_query_arg( 'news_cat', $cat->slug, get_post_type_archive_link( 'lfciath_news' ) ) ); ?>"
-                   class="lfciath-filter-btn <?php echo ( $active_cat === $cat->slug ) ? 'active' : ''; ?>">
+                   class="lfciath-tab <?php echo ( $active_cat === $cat->slug ) ? 'active' : ''; ?>">
                     <?php echo esc_html( $cat->name ); ?>
-                    <span class="lfciath-filter-count"><?php echo esc_html( $cat->count ); ?></span>
+                    <span class="lfciath-tab-count"><?php echo esc_html( $cat->count ); ?></span>
                 </a>
             <?php endforeach; ?>
         </div>
