@@ -351,7 +351,7 @@ function lfciath_build_news_archive( $atts ) {
                     $lr_r_class = $lr_r === 'W' ? 'win' : ( $lr_r === 'L' ? 'loss' : 'draw' );
                     $lr_r_text  = $lr_r === 'W' ? 'ชนะ' : ( $lr_r === 'L' ? 'แพ้' : 'เสมอ' );
                 ?>
-                <div class="lfciath-sidebar-widget">
+                <div class="lfciath-sidebar-widget lfciath-widget-latest-result">
                     <div class="lfciath-sidebar-widget-header" style="background: #1A1A1A;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         ผลล่าสุด
@@ -388,37 +388,43 @@ function lfciath_build_news_archive( $atts ) {
         ?>
 
         <?php
-        // === Archive Banner (full-width, between featured section and match results) ===
+        // === Archive Banner — Leaderboard style (slim full-width, dark bg, CTA on right) ===
         $archive_banner = get_option( 'lfciath_archive_banner', array() );
-        if (
-            ! empty( $archive_banner['active'] ) &&
-            ! empty( $archive_banner['image_id'] )
-        ) :
-            $ab_image_url = wp_get_attachment_image_url( intval( $archive_banner['image_id'] ), 'full' );
+        if ( ! empty( $archive_banner['active'] ) ) :
+            $ab_image_id  = isset( $archive_banner['image_id'] ) ? intval( $archive_banner['image_id'] ) : 0;
+            $ab_image_url = $ab_image_id ? wp_get_attachment_image_url( $ab_image_id, 'full' ) : '';
             $ab_link_url  = ! empty( $archive_banner['link_url'] ) ? esc_url( $archive_banner['link_url'] ) : '';
             $ab_target    = ( isset( $archive_banner['link_target'] ) && $archive_banner['link_target'] === '_self' ) ? '_self' : '_blank';
             $ab_title     = isset( $archive_banner['title'] ) ? esc_attr( $archive_banner['title'] ) : '';
-            if ( $ab_image_url ) :
+            $ab_bg_color  = ! empty( $archive_banner['bg_color'] ) ? esc_attr( $archive_banner['bg_color'] ) : '#1a1a1a';
+            $ab_left_text = isset( $archive_banner['left_text'] ) ? esc_html( $archive_banner['left_text'] ) : '';
+            $ab_cta_text  = isset( $archive_banner['cta_text'] ) ? esc_html( $archive_banner['cta_text'] ) : '';
+            $ab_cta_url   = ! empty( $archive_banner['cta_url'] ) ? esc_url( $archive_banner['cta_url'] ) : $ab_link_url;
+
+            $ab_bg_style = 'background-color:' . $ab_bg_color . ';';
+            if ( $ab_image_url ) {
+                $ab_bg_style .= 'background-image:url(' . esc_url( $ab_image_url ) . ');background-size:cover;background-position:center;';
+            }
         ?>
-        <div class="lfciath-archive-banner-wrap">
-            <?php if ( $ab_link_url ) : ?>
-                <a href="<?php echo $ab_link_url; ?>" target="<?php echo esc_attr( $ab_target ); ?>" rel="noopener noreferrer" class="lfciath-archive-banner-link">
-                    <img src="<?php echo esc_url( $ab_image_url ); ?>" alt="<?php echo $ab_title; ?>" loading="lazy" />
-                </a>
-            <?php else : ?>
-                <div class="lfciath-archive-banner-link">
-                    <img src="<?php echo esc_url( $ab_image_url ); ?>" alt="<?php echo $ab_title; ?>" loading="lazy" />
+        <div class="lfciath-archive-banner-wrap" style="<?php echo $ab_bg_style; ?>">
+            <div class="lfciath-archive-banner-inner">
+                <div class="lfciath-archive-banner-left">
+                    <?php if ( $ab_left_text ) : ?>
+                        <span class="lfciath-archive-banner-label"><?php echo $ab_left_text; ?></span>
+                    <?php elseif ( ! $ab_image_url ) : ?>
+                        <span class="lfciath-archive-banner-label" style="opacity:.45;">ตั้งค่า Banner ที่เมนู News &gt; Banner Archive</span>
+                    <?php endif; ?>
                 </div>
-            <?php endif; ?>
+                <div class="lfciath-archive-banner-right">
+                    <?php if ( $ab_cta_text && $ab_cta_url ) : ?>
+                        <a href="<?php echo $ab_cta_url; ?>" target="<?php echo esc_attr( $ab_target ); ?>" rel="noopener noreferrer" class="lfciath-archive-banner-cta"><?php echo $ab_cta_text; ?> &rsaquo;</a>
+                    <?php elseif ( $ab_link_url && ! $ab_cta_text ) : ?>
+                        <a href="<?php echo $ab_link_url; ?>" target="<?php echo esc_attr( $ab_target ); ?>" rel="noopener noreferrer" class="lfciath-archive-banner-cta">ดูเพิ่มเติม &rsaquo;</a>
+                    <?php endif; ?>
+                </div>
+            </div>
         </div>
-        <style>
-        .lfciath-archive-banner-wrap { width: 100%; margin: 20px 0; }
-        .lfciath-archive-banner-wrap img { width: 100%; height: auto; display: block; max-height: 180px; object-fit: cover; border-radius: 8px; }
-        </style>
-        <?php
-            endif;
-        endif;
-        ?>
+        <?php endif; ?>
 
         <!-- Match Results + Upcoming Fixtures -->
         <?php if ( $paged === 1 ) :
@@ -445,7 +451,7 @@ function lfciath_build_news_archive( $atts ) {
 
         <!-- Section Header: Match Results -->
         <div class="lfciath-section-header">
-            <h2>ผลการแข่งขัน</h2>
+            <h2>ตารางการแข่งขัน</h2>
         </div>
 
         <div class="lfciath-match-section">
@@ -522,6 +528,27 @@ function lfciath_build_news_archive( $atts ) {
                 </div>
             </div>
             <?php endif; ?>
+        </div>
+        <?php
+            endif;
+        endif;
+        ?>
+
+        <!-- Activity Schedule Section -->
+        <?php if ( $paged === 1 && function_exists( 'lfciath_build_activity_schedule' ) ) :
+            $act_html = lfciath_build_activity_schedule( array(
+                'count'       => 6,
+                'show_past'   => 'no',
+                'view'        => 'cards',
+                'show_filter' => 'yes',
+            ) );
+            if ( $act_html ) :
+        ?>
+        <div class="lfciath-section-header">
+            <h2>ตารางกิจกรรม</h2>
+        </div>
+        <div style="padding: 0 0 20px;">
+            <?php echo $act_html; ?>
         </div>
         <?php
             endif;
@@ -643,6 +670,10 @@ function lfciath_handle_archive_banner_save() {
         'link_target' => ( isset( $_POST['link_target'] ) && $_POST['link_target'] === '_self' ) ? '_self' : '_blank',
         'title'       => isset( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : '',
         'active'      => ! empty( $_POST['active'] ),
+        'bg_color'    => isset( $_POST['bg_color'] ) ? sanitize_hex_color( wp_unslash( $_POST['bg_color'] ) ) : '#1a1a1a',
+        'left_text'   => isset( $_POST['left_text'] ) ? sanitize_text_field( wp_unslash( $_POST['left_text'] ) ) : '',
+        'cta_text'    => isset( $_POST['cta_text'] ) ? sanitize_text_field( wp_unslash( $_POST['cta_text'] ) ) : '',
+        'cta_url'     => isset( $_POST['cta_url'] ) ? esc_url_raw( wp_unslash( $_POST['cta_url'] ) ) : '',
     );
 
     update_option( 'lfciath_archive_banner', $data );
@@ -666,12 +697,16 @@ function lfciath_archive_banner_settings_page() {
     // โหลด wp.media สำหรับ Media Picker
     wp_enqueue_media();
 
-    $banner  = get_option( 'lfciath_archive_banner', array() );
+    $banner      = get_option( 'lfciath_archive_banner', array() );
     $image_id    = isset( $banner['image_id'] ) ? intval( $banner['image_id'] ) : 0;
     $link_url    = isset( $banner['link_url'] ) ? $banner['link_url'] : '';
     $link_target = ( isset( $banner['link_target'] ) && $banner['link_target'] === '_self' ) ? '_self' : '_blank';
     $title       = isset( $banner['title'] ) ? $banner['title'] : '';
     $active      = ! empty( $banner['active'] );
+    $bg_color    = isset( $banner['bg_color'] ) ? $banner['bg_color'] : '#1a1a1a';
+    $left_text   = isset( $banner['left_text'] ) ? $banner['left_text'] : '';
+    $cta_text    = isset( $banner['cta_text'] ) ? $banner['cta_text'] : '';
+    $cta_url     = isset( $banner['cta_url'] ) ? $banner['cta_url'] : '';
 
     $image_url = $image_id ? wp_get_attachment_image_url( $image_id, 'medium_large' ) : '';
 
@@ -733,6 +768,42 @@ function lfciath_archive_banner_settings_page() {
                         <th scope="row"><label for="lfciath_ab_title">ข้อความ Alt (title)</label></th>
                         <td>
                             <input type="text" name="title" id="lfciath_ab_title" value="<?php echo esc_attr( $title ); ?>" class="regular-text" placeholder="คำอธิบายรูปภาพสำหรับ accessibility" />
+                        </td>
+                    </tr>
+
+                    <!-- สีพื้นหลัง -->
+                    <tr>
+                        <th scope="row"><label for="lfciath_ab_bg_color">สีพื้นหลัง Banner</label></th>
+                        <td>
+                            <input type="color" name="bg_color" id="lfciath_ab_bg_color" value="<?php echo esc_attr( $bg_color ); ?>" />
+                            <p class="description">ใช้เมื่อไม่มีรูปภาพ หรือแสดงเป็น overlay (ค่าเริ่มต้น: #1a1a1a)</p>
+                        </td>
+                    </tr>
+
+                    <!-- ข้อความซ้าย -->
+                    <tr>
+                        <th scope="row"><label for="lfciath_ab_left_text">ข้อความฝั่งซ้าย</label></th>
+                        <td>
+                            <input type="text" name="left_text" id="lfciath_ab_left_text" value="<?php echo esc_attr( $left_text ); ?>" class="regular-text" placeholder="เช่น LFC International Academy Thailand" />
+                            <p class="description">ข้อความแสดงทางซ้ายของ Banner (ไม่บังคับ)</p>
+                        </td>
+                    </tr>
+
+                    <!-- CTA Button -->
+                    <tr>
+                        <th scope="row"><label for="lfciath_ab_cta_text">ข้อความปุ่ม CTA</label></th>
+                        <td>
+                            <input type="text" name="cta_text" id="lfciath_ab_cta_text" value="<?php echo esc_attr( $cta_text ); ?>" class="regular-text" placeholder="เช่น ดูกิจกรรมทั้งหมด" />
+                            <p class="description">ข้อความปุ่มทางขวาของ Banner (ไม่บังคับ)</p>
+                        </td>
+                    </tr>
+
+                    <!-- CTA URL -->
+                    <tr>
+                        <th scope="row"><label for="lfciath_ab_cta_url">URL ปุ่ม CTA</label></th>
+                        <td>
+                            <input type="url" name="cta_url" id="lfciath_ab_cta_url" value="<?php echo esc_attr( $cta_url ); ?>" class="regular-text" placeholder="https://" />
+                            <p class="description">ถ้าว่าง จะใช้ URL ลิงก์หลักด้านบนแทน</p>
                         </td>
                     </tr>
 

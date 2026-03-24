@@ -19,10 +19,10 @@ function lfciath_hide_match_results_css() {
     if ( is_admin() ) return;
     ?>
     <style id="lfciath-hide-match-results">
-        /* ซ่อน Match Results section ชั่วคราว */
-        .lfciath-match-section { display: none !important; }
-        /* ซ่อน Section Header ที่อยู่ก่อน match section (CSS :has) */
-        .lfciath-section-header:has(+ .lfciath-match-section) { display: none !important; }
+        /* ซ่อน ผลการแข่งขันล่าสุด panel (แต่แสดง ตารางการแข่งขันนัดต่อไป ไว้) */
+        .lfciath-match-panel:has(.lfciath-results-header) { display: none !important; }
+        /* ซ่อน ผลล่าสุด widget ใน sidebar */
+        .lfciath-widget-latest-result { display: none !important; }
     </style>
     <?php
 }
