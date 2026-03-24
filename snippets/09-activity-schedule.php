@@ -784,6 +784,10 @@ add_shortcode( 'lfciath_activity_schedule', 'lfciath_activity_schedule_shortcode
 // 11. Build Frontend HTML
 // ============================================================
 function lfciath_build_activity_schedule( $atts ) {
+    static $wrap_counter = 0;
+    $wrap_counter++;
+    $wrap_id = 'lfciath-act-wrap-' . $wrap_counter;
+
     $types = lfciath_get_activity_types();
     $today = wp_date( 'Y-m-d' );
 
@@ -895,20 +899,21 @@ function lfciath_build_activity_schedule( $atts ) {
         $current_url = get_permalink() ?: home_url( add_query_arg( array() ) );
         $base_filter_url = remove_query_arg( 'act_type', $current_url );
     ?>
-    <div class="lfciath-act-filter-bar">
-        <a href="<?php echo esc_url( $base_filter_url ); ?>"
-           class="lfciath-act-filter-tab <?php echo empty( $active_type ) ? 'active' : ''; ?>">
+    <div class="lfciath-act-filter-bar" id="<?php echo esc_attr( $wrap_id ); ?>-filters">
+        <button type="button"
+                class="lfciath-act-filter-tab active"
+                data-filter="all"
+                data-wrap="<?php echo esc_attr( $wrap_id ); ?>">
             ทั้งหมด
-        </a>
-        <?php foreach ( $types as $type_key => $type_data ) :
-            $tab_url    = esc_url( add_query_arg( 'act_type', $type_key, $base_filter_url ) );
-            $tab_active = ( $active_type === $type_key );
-        ?>
-        <a href="<?php echo $tab_url; ?>"
-           class="lfciath-act-filter-tab <?php echo $tab_active ? 'active' : ''; ?>"
-           style="<?php echo $tab_active ? '--tab-active-bg:' . esc_attr( $type_data['color'] ) . ';' : ''; ?>">
+        </button>
+        <?php foreach ( $types as $type_key => $type_data ) : ?>
+        <button type="button"
+                class="lfciath-act-filter-tab"
+                data-filter="<?php echo esc_attr( $type_key ); ?>"
+                data-color="<?php echo esc_attr( $type_data['color'] ); ?>"
+                data-wrap="<?php echo esc_attr( $wrap_id ); ?>">
             <?php echo esc_html( $type_data['icon'] . ' ' . $type_data['label'] ); ?>
-        </a>
+        </button>
         <?php endforeach; ?>
     </div>
     <?php endif; ?>
@@ -1018,7 +1023,7 @@ function lfciath_build_activity_schedule( $atts ) {
     <?php else : ?>
     <!-- ======= CARDS VIEW (default) ======= -->
     <?php $act_modals_html = ''; ?>
-    <div class="lfciath-activity-cards">
+    <div class="lfciath-activity-cards" id="<?php echo esc_attr( $wrap_id ); ?>-cards">
         <?php while ( $query->have_posts() ) : $query->the_post();
         $act_id      = get_the_ID();
         $act_date    = get_post_meta( $act_id, 'activity_date',         true );
@@ -1063,6 +1068,7 @@ function lfciath_build_activity_schedule( $atts ) {
         $is_past      = $act_date_end ? ( $act_date_end < $today ) : ( $act_date && $act_date < $today );
         ?>
         <div class="lfciath-activity-card <?php echo $is_past ? 'is-past' : ''; ?> <?php echo $is_cancelled ? 'is-cancelled' : ''; ?>"
+             data-activity-type="<?php echo esc_attr( $act_type ); ?>"
              style="--act-color:<?php echo esc_attr( $type_info['color'] ); ?>;">
 
             <!-- Date Column -->
@@ -1411,6 +1417,38 @@ function lfciath_build_activity_schedule( $atts ) {
             if (o) o.setAttribute('hidden','');
             document.body.style.overflow = '';
         }
+        // ---- Activity filter tabs (client-side, cache-friendly) ----
+        document.querySelectorAll('.lfciath-act-filter-tab[data-wrap]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var wrapId   = btn.dataset.wrap;
+                var filter   = btn.dataset.filter;
+                var color    = btn.dataset.color || '';
+                var cards    = document.getElementById(wrapId + '-cards');
+                var filterBar = document.getElementById(wrapId + '-filters');
+
+                // Update active tab
+                if (filterBar) {
+                    filterBar.querySelectorAll('.lfciath-act-filter-tab').forEach(function(t) {
+                        t.classList.remove('active');
+                        t.style.removeProperty('--tab-active-bg');
+                    });
+                }
+                btn.classList.add('active');
+                if (color) { btn.style.setProperty('--tab-active-bg', color); }
+
+                // Show/hide cards
+                if (cards) {
+                    cards.querySelectorAll('.lfciath-activity-card').forEach(function(card) {
+                        if (filter === 'all' || card.dataset.activityType === filter) {
+                            card.style.display = '';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                }
+            });
+        });
+
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('lfciath-act-readmore-btn')) {
                 openModal(e.target.dataset.modal);
