@@ -25,7 +25,7 @@
  * 4. Secret: ค่าเดียวกับ LFCIATH_GH_SECRET
  * 5. Events: Just the push event
  * ============================================================
- * @version  V.10
+ * @version  V.11
  * @updated  2026-03-24
  */
 
