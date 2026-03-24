@@ -8,7 +8,7 @@
  * ระบบจัดการตารางกิจกรรม: วัน เวลา สถานที่ ชื่อกิจกรรม
  * Shortcode: [lfciath_activity_schedule count="10" show_past="no" type="" view="cards" age_group="" show_filter="no"]
  * ============================================================
- * @version  V.11
+ * @version  V.11.1
  * @updated  2026-03-24
  */
 
@@ -929,6 +929,8 @@ function lfciath_build_activity_schedule( $atts ) {
         $act_age     = get_post_meta( $act_id, 'activity_age_group',    true );
         $act_status  = get_post_meta( $act_id, 'activity_status',       true );
         $act_desc    = get_post_meta( $act_id, 'activity_description',  true );
+        $act_img_id  = (int) get_post_meta( $act_id, 'activity_image_id', true );
+        $act_img_url = $act_img_id ? wp_get_attachment_image_url( $act_img_id, 'medium' ) : '';
         $type_info   = isset( $types[ $act_type ] ) ? $types[ $act_type ] : $types['other'];
 
         $d        = $act_date ? explode( '-', $act_date ) : array( '', '', '' );
@@ -975,6 +977,12 @@ function lfciath_build_activity_schedule( $atts ) {
                 </div>
 
                 <h4 class="lfciath-act-card-title"><?php the_title(); ?></h4>
+
+                <?php if ( $act_img_url ) : ?>
+                <div class="lfciath-act-card-img">
+                    <img src="<?php echo esc_url( $act_img_url ); ?>" alt="<?php the_title_attribute(); ?>" loading="lazy" />
+                </div>
+                <?php endif; ?>
 
                 <?php if ( $time_display ) : ?>
                 <p class="lfciath-act-card-detail">
@@ -1155,6 +1163,18 @@ function lfciath_activity_enqueue_css() {
     color: #999;
     margin: 6px 0 0;
     line-height: 1.6;
+}
+.lfciath-act-card-img {
+    margin: 8px 0;
+    border-radius: 6px;
+    overflow: hidden;
+    line-height: 0;
+}
+.lfciath-act-card-img img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 6px;
 }
 
 /* ----- Table View ----- */

@@ -5,7 +5,7 @@
  * ต้อง Activate snippet 8A ก่อน
  * เก็บข้อมูลใน wp_options (ไม่ต้อง ACF)
  * ============================================================
- * @version  V.11
+ * @version  V.11.1
  * @updated  2026-03-24
  */
 
@@ -1163,6 +1163,25 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
                 </select>
             </div>
 
+            <!-- รูปกิจกรรม -->
+            <?php
+            $v_image_id  = $post_id ? (int) get_post_meta( $post_id, 'activity_image_id', true ) : 0;
+            $v_image_url = $v_image_id ? wp_get_attachment_image_url( $v_image_id, 'medium' ) : '';
+            wp_enqueue_media();
+            ?>
+            <div class="lfciath-cc-card">
+                <div class="lfciath-cc-card-header"><span class="dashicons dashicons-format-image"></span> รูปกิจกรรม (ไม่บังคับ)</div>
+                <p style="font-size:12px;color:#888;margin:0 0 10px;">แนะนำขนาด 1200×1500 px (แนวตั้ง)</p>
+                <input type="hidden" name="activity_image_id" id="act-image-id" value="<?php echo esc_attr( $v_image_id ); ?>" />
+                <div id="act-image-preview" style="<?php echo $v_image_url ? '' : 'display:none;'; ?>margin-bottom:10px;">
+                    <img id="act-image-thumb" src="<?php echo esc_url( $v_image_url ); ?>" alt="" style="max-width:180px;height:auto;border-radius:6px;border:1px solid #e5e7eb;" />
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button type="button" id="act-select-image" class="lfciath-cc-btn lfciath-cc-btn-secondary">เลือกรูป</button>
+                    <button type="button" id="act-remove-image" class="lfciath-cc-btn lfciath-cc-btn-danger" style="<?php echo $v_image_url ? '' : 'display:none;'; ?>">ลบรูป</button>
+                </div>
+            </div>
+
             <!-- รายละเอียด -->
             <div class="lfciath-cc-card">
                 <div class="lfciath-cc-card-header"><span class="dashicons dashicons-editor-alignleft"></span> รายละเอียด</div>
@@ -1175,6 +1194,31 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
             </button>
         </div>
     </form>
+    <script>
+    (function(){
+        var actFrame;
+        var selectBtn = document.getElementById('act-select-image');
+        if ( selectBtn ) selectBtn.addEventListener('click', function(){
+            if ( actFrame ) { actFrame.open(); return; }
+            actFrame = wp.media({ title: 'เลือกรูปกิจกรรม', button: { text: 'ใช้รูปนี้' }, multiple: false });
+            actFrame.on('select', function(){
+                var att = actFrame.state().get('selection').first().toJSON();
+                document.getElementById('act-image-id').value = att.id;
+                document.getElementById('act-image-thumb').src = att.url;
+                document.getElementById('act-image-preview').style.display = '';
+                document.getElementById('act-remove-image').style.display = '';
+            });
+            actFrame.open();
+        });
+        var removeBtn = document.getElementById('act-remove-image');
+        if ( removeBtn ) removeBtn.addEventListener('click', function(){
+            document.getElementById('act-image-id').value = '';
+            document.getElementById('act-image-thumb').src = '';
+            document.getElementById('act-image-preview').style.display = 'none';
+            this.style.display = 'none';
+        });
+    })();
+    </script>
     <?php
 }
 
@@ -1302,6 +1346,7 @@ function lfciath_handle_cc_save_activity() {
     $location    = isset( $_POST['activity_location'] )    ? sanitize_text_field( wp_unslash( $_POST['activity_location'] ) )        : '';
     $description = isset( $_POST['activity_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['activity_description'] ) ) : '';
     $status      = isset( $_POST['activity_status'] )      ? sanitize_text_field( wp_unslash( $_POST['activity_status'] ) )          : 'upcoming';
+    $image_id    = isset( $_POST['activity_image_id'] )    ? intval( $_POST['activity_image_id'] )                                    : 0;
 
     $allowed_types    = array( 'training', 'match', 'event', 'camp', 'other' );
     $allowed_statuses = array( 'upcoming', 'ongoing', 'completed', 'cancelled' );
@@ -1334,6 +1379,11 @@ function lfciath_handle_cc_save_activity() {
         update_post_meta( $post_id, 'activity_location',    $location );
         update_post_meta( $post_id, 'activity_description', $description );
         update_post_meta( $post_id, 'activity_status',      $status );
+        if ( $image_id > 0 ) {
+            update_post_meta( $post_id, 'activity_image_id', $image_id );
+        } else {
+            delete_post_meta( $post_id, 'activity_image_id' );
+        }
     }
 
     wp_redirect( add_query_arg( array( 'view' => 'list-activities', 'msg' => $msg ), $redirect_base ) );

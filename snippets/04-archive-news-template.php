@@ -10,7 +10,7 @@
  * ============================================================
  * ใช้ template_include เพื่อ render หน้าเต็ม (ทำงานกับทุก theme รวม Elementor Pro)
  * ============================================================
- * @version  V.11
+ * @version  V.11.1
  * @updated  2026-03-24
  */
 
@@ -388,41 +388,35 @@ function lfciath_build_news_archive( $atts ) {
         ?>
 
         <?php
-        // === Archive Banner — Leaderboard style (slim full-width, dark bg, CTA on right) ===
+        // === Archive Banner — Leaderboard (image fills width, natural aspect ratio) ===
         $archive_banner = get_option( 'lfciath_archive_banner', array() );
         if ( ! empty( $archive_banner['active'] ) ) :
-            $ab_image_id  = isset( $archive_banner['image_id'] ) ? intval( $archive_banner['image_id'] ) : 0;
+            $ab_image_id = isset( $archive_banner['image_id'] ) ? intval( $archive_banner['image_id'] ) : 0;
             $ab_image_url = $ab_image_id ? wp_get_attachment_image_url( $ab_image_id, 'full' ) : '';
             $ab_link_url  = ! empty( $archive_banner['link_url'] ) ? esc_url( $archive_banner['link_url'] ) : '';
             $ab_target    = ( isset( $archive_banner['link_target'] ) && $archive_banner['link_target'] === '_self' ) ? '_self' : '_blank';
-            $ab_title     = isset( $archive_banner['title'] ) ? esc_attr( $archive_banner['title'] ) : '';
+            $ab_title     = ! empty( $archive_banner['title'] ) ? esc_attr( $archive_banner['title'] ) : 'Banner';
             $ab_bg_color  = ! empty( $archive_banner['bg_color'] ) ? esc_attr( $archive_banner['bg_color'] ) : '#1a1a1a';
-            $ab_left_text = isset( $archive_banner['left_text'] ) ? esc_html( $archive_banner['left_text'] ) : '';
-            $ab_cta_text  = isset( $archive_banner['cta_text'] ) ? esc_html( $archive_banner['cta_text'] ) : '';
-            $ab_cta_url   = ! empty( $archive_banner['cta_url'] ) ? esc_url( $archive_banner['cta_url'] ) : $ab_link_url;
-
-            $ab_bg_style = 'background-color:' . $ab_bg_color . ';';
-            if ( $ab_image_url ) {
-                $ab_bg_style .= 'background-image:url(' . esc_url( $ab_image_url ) . ');background-size:cover;background-position:center;';
-            }
+            $ab_cta_text  = ! empty( $archive_banner['cta_text'] ) ? esc_html( $archive_banner['cta_text'] ) : '';
         ?>
-        <div class="lfciath-archive-banner-wrap" style="<?php echo $ab_bg_style; ?>">
-            <div class="lfciath-archive-banner-inner">
-                <div class="lfciath-archive-banner-left">
-                    <?php if ( $ab_left_text ) : ?>
-                        <span class="lfciath-archive-banner-label"><?php echo $ab_left_text; ?></span>
-                    <?php elseif ( ! $ab_image_url ) : ?>
-                        <span class="lfciath-archive-banner-label" style="opacity:.45;">ตั้งค่า Banner ที่เมนู News &gt; Banner Archive</span>
+        <div class="lfciath-archive-banner-wrap">
+            <?php if ( $ab_image_url ) : ?>
+                <?php if ( $ab_link_url ) : ?>
+                    <a href="<?php echo $ab_link_url; ?>" target="<?php echo esc_attr( $ab_target ); ?>" rel="noopener noreferrer" title="<?php echo $ab_title; ?>" style="display:block;line-height:0;">
+                        <img src="<?php echo esc_url( $ab_image_url ); ?>" alt="<?php echo $ab_title; ?>" style="width:100%;height:auto;display:block;" loading="lazy" />
+                    </a>
+                <?php else : ?>
+                    <img src="<?php echo esc_url( $ab_image_url ); ?>" alt="<?php echo $ab_title; ?>" style="width:100%;height:auto;display:block;" loading="lazy" />
+                <?php endif; ?>
+            <?php else : ?>
+                <!-- text-only fallback when no image uploaded -->
+                <div class="lfciath-archive-banner-inner" style="background-color:<?php echo $ab_bg_color; ?>;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-radius:6px;">
+                    <span class="lfciath-archive-banner-label" style="color:#ffffff;font-size:14px;font-weight:600;"><?php echo $ab_title; ?></span>
+                    <?php if ( $ab_cta_text && $ab_link_url ) : ?>
+                        <a href="<?php echo $ab_link_url; ?>" target="<?php echo esc_attr( $ab_target ); ?>" rel="noopener noreferrer" class="lfciath-archive-banner-cta" style="color:#ffffff;background:rgba(255,255,255,.2);padding:6px 14px;border-radius:4px;font-size:13px;text-decoration:none;"><?php echo $ab_cta_text; ?> &rsaquo;</a>
                     <?php endif; ?>
                 </div>
-                <div class="lfciath-archive-banner-right">
-                    <?php if ( $ab_cta_text && $ab_cta_url ) : ?>
-                        <a href="<?php echo $ab_cta_url; ?>" target="<?php echo esc_attr( $ab_target ); ?>" rel="noopener noreferrer" class="lfciath-archive-banner-cta"><?php echo $ab_cta_text; ?> &rsaquo;</a>
-                    <?php elseif ( $ab_link_url && ! $ab_cta_text ) : ?>
-                        <a href="<?php echo $ab_link_url; ?>" target="<?php echo esc_attr( $ab_target ); ?>" rel="noopener noreferrer" class="lfciath-archive-banner-cta">ดูเพิ่มเติม &rsaquo;</a>
-                    <?php endif; ?>
-                </div>
-            </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
 

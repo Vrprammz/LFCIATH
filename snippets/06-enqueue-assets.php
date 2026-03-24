@@ -9,7 +9,7 @@
  *   1. ใส่ผ่าน snippet นี้ (โหลดจากไฟล์ CSS ใน theme/child-theme)
  *   2. ใส่ใน Elementor > Custom CSS หรือ Customizer > Additional CSS
  * ============================================================
- * @version  V.11
+ * @version  V.11.1
  * @updated  2026-03-24
  */
 
@@ -539,6 +539,11 @@ function lfciath_get_news_css() {
 .lfciath-section-header { margin-bottom: 20px; margin-top: 10px; }
 .lfciath-section-header h2 { font-family: var(--lfc-font-thai); font-size: 22px; font-weight: 700; color: var(--lfc-black); margin: 0; padding-left: 16px; position: relative; }
 .lfciath-section-header h2::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 4px; background: var(--lfc-red); border-radius: 2px; }
+
+/* NEWS ARCHIVE - Leaderboard Banner */
+.lfciath-archive-banner-wrap { margin: 0 0 24px; border-radius: 8px; overflow: hidden; line-height: 0; }
+.lfciath-archive-banner-wrap img { width: 100%; height: auto; display: block; }
+.lfciath-archive-banner-wrap a { display: block; line-height: 0; }
 
 /* NEWS ARCHIVE - Match Results + Fixtures */
 .lfciath-match-section { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 28px; }
