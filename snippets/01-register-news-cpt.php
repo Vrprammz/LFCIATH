@@ -5,6 +5,8 @@
  * วิธีใช้: คัดลอกโค้ดนี้ไปวางใน Code Snippets plugin
  * ชื่อ Snippet: "LFCIATH - Register News CPT"
  * ============================================================
+ * @version  V.10
+ * @updated  2026-03-24
  */
 
 // Register Custom Post Type: News (ข่าว)

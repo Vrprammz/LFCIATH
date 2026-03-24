@@ -9,6 +9,8 @@
  *   1. ใส่ผ่าน snippet นี้ (โหลดจากไฟล์ CSS ใน theme/child-theme)
  *   2. ใส่ใน Elementor > Custom CSS หรือ Customizer > Additional CSS
  * ============================================================
+ * @version  V.10
+ * @updated  2026-03-24
  */
 
 function lfciath_enqueue_news_assets() {

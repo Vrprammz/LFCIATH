@@ -10,6 +10,8 @@
  * ============================================================
  * ใช้ template_include เพื่อ render หน้าเต็ม (ทำงานกับทุก theme รวม Elementor Pro)
  * ============================================================
+ * @version  V.10
+ * @updated  2026-03-24
  */
 
 // Override archive template — render full page พร้อม header/footer ของเรา
