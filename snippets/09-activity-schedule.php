@@ -1136,10 +1136,13 @@ function lfciath_build_activity_schedule( $atts ) {
                     อ่านเพิ่มเติม ↓
                 </button>
                 <?php endif; ?>
+
                 <?php if ( $act_register_url ) : ?>
-                <a href="<?php echo esc_url( $act_register_url ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-act-register-btn">
-                    สมัครเลย →
-                </a>
+                <div class="lfciath-act-card-footer">
+                    <a href="<?php echo esc_url( $act_register_url ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-act-register-btn">
+                        สมัครเลย →
+                    </a>
+                </div>
                 <?php endif; ?>
             </div>
 
@@ -1551,6 +1554,14 @@ function lfciath_activity_enqueue_css() {
     padding: 14px 16px;
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.lfciath-act-card-footer {
+    margin-top: auto;
+    padding-top: 10px;
+    display: flex;
+    justify-content: flex-end;
 }
 .lfciath-act-card-meta {
     display: flex;
@@ -1580,7 +1591,7 @@ function lfciath_activity_enqueue_css() {
 }
 .lfciath-act-register-btn {
     display: inline-block;
-    margin-top: 10px;
+    margin-top: 0;
     padding: 7px 18px;
     background: var(--lfc-red, #C8102E);
     color: #fff !important;
