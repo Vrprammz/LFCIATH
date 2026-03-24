@@ -1619,6 +1619,7 @@ function lfciath_activity_enqueue_css() {
     backdrop-filter: blur(3px);
     -webkit-backdrop-filter: blur(3px);
 }
+.lfciath-act-modal-overlay[hidden] { display: none !important; }
 /* Modal container */
 .lfciath-act-modal {
     position: fixed;
@@ -1629,6 +1630,7 @@ function lfciath_activity_enqueue_css() {
     justify-content: center;
     padding: 16px;
 }
+.lfciath-act-modal[hidden] { display: none !important; }
 .lfciath-act-modal-inner {
     background: #fff;
     border-radius: 14px;
