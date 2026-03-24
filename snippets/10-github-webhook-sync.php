@@ -97,8 +97,9 @@ function lfciath_handle_github_webhook( WP_REST_Request $request ) {
     }
 
     // --- 3d. Parse payload ---
-    $payload = $request->get_json_params();
-    if ( empty( $payload ) ) {
+    // ใช้ raw_body ที่อ่านไว้แล้ว แทน get_json_params() ซึ่งต้องการ Content-Type ตรงเป๊ะ
+    $payload = json_decode( $raw_body, true );
+    if ( empty( $payload ) || ! is_array( $payload ) ) {
         lfciath_webhook_log( 'ERROR: Empty or invalid JSON payload' );
         return new WP_REST_Response( array( 'error' => 'invalid_payload' ), 400 );
     }
@@ -202,7 +203,7 @@ function lfciath_sync_snippet_from_github( $file_path, $snippet_name ) {
     }
 
     // Decode base64 content จาก GitHub API
-    $code = base64_decode( str_replace( "\n", '', $body['content'] ) );
+    $code = base64_decode( str_replace( "\n", '', $body['content'] ), true );
     if ( false === $code || '' === $code ) {
         return 'decode_error';
     }
@@ -246,7 +247,7 @@ function lfciath_sync_snippet_from_github( $file_path, $snippet_name ) {
     }
 
     // ล้าง opcode cache ถ้ามี
-    if ( function_exists( 'opcache_invalidate' ) ) {
+    if ( function_exists( 'opcache_reset' ) ) {
         opcache_reset();
     }
 
