@@ -1017,6 +1017,7 @@ function lfciath_build_activity_schedule( $atts ) {
 
     <?php else : ?>
     <!-- ======= CARDS VIEW (default) ======= -->
+    <?php $act_modals_html = ''; ?>
     <div class="lfciath-activity-cards">
         <?php while ( $query->have_posts() ) : $query->the_post();
         $act_id      = get_the_ID();
@@ -1120,8 +1121,20 @@ function lfciath_build_activity_schedule( $atts ) {
                 </p>
                 <?php endif; ?>
 
+                <?php
+                $act_modal_id  = 'lfciath-act-modal-' . $act_id;
+                $short_desc    = $act_desc ? wp_trim_words( $act_desc, 20, '' ) : '';
+                $has_more_desc = $act_desc && ( mb_strlen( $act_desc ) > mb_strlen( $short_desc ) + 2 );
+                ?>
                 <?php if ( $act_desc ) : ?>
-                <p class="lfciath-act-card-desc"><?php echo esc_html( wp_trim_words( $act_desc, 20, '...' ) ); ?></p>
+                <p class="lfciath-act-card-desc">
+                    <?php echo esc_html( wp_trim_words( $act_desc, 20, $has_more_desc ? '...' : '' ) ); ?>
+                </p>
+                <?php endif; ?>
+                <?php if ( $has_more_desc || $act_img_url ) : ?>
+                <button type="button" class="lfciath-act-readmore-btn" data-modal="<?php echo esc_attr( $act_modal_id ); ?>">
+                    อ่านเพิ่มเติม ↓
+                </button>
                 <?php endif; ?>
                 <?php if ( $act_register_url ) : ?>
                 <a href="<?php echo esc_url( $act_register_url ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-act-register-btn">
@@ -1131,8 +1144,39 @@ function lfciath_build_activity_schedule( $atts ) {
             </div>
 
         </div>
+        <?php
+        // Build modal HTML for this card
+        $act_title_esc = esc_html( get_the_title() );
+        $act_img_full  = $act_img_id ? wp_get_attachment_image_url( $act_img_id, 'large' ) : '';
+        ob_start();
+        ?>
+        <div id="<?php echo esc_attr( $act_modal_id ); ?>" class="lfciath-act-modal" hidden aria-modal="true" role="dialog">
+            <div class="lfciath-act-modal-inner">
+                <button type="button" class="lfciath-act-modal-close" aria-label="ปิด">✕</button>
+                <?php if ( $act_img_full ) : ?>
+                <img src="<?php echo esc_url( $act_img_full ); ?>" alt="<?php echo $act_title_esc; ?>" class="lfciath-act-modal-img" loading="lazy" />
+                <?php endif; ?>
+                <h3 class="lfciath-act-modal-title"><?php echo $act_title_esc; ?></h3>
+                <div class="lfciath-act-modal-meta">
+                    <?php if ( $time_display ) : ?><?php echo esc_html( '🕐 ' . $time_display ); ?><br><?php endif; ?>
+                    <?php if ( $act_loc ) : ?><?php echo esc_html( '📍 ' . $act_loc ); ?><br><?php endif; ?>
+                    <?php if ( $act_age ) : ?><?php echo esc_html( '👤 ' . $act_age ); ?><?php endif; ?>
+                </div>
+                <?php if ( $act_desc ) : ?>
+                <p class="lfciath-act-modal-desc"><?php echo nl2br( esc_html( $act_desc ) ); ?></p>
+                <?php endif; ?>
+                <?php if ( $act_register_url ) : ?>
+                <a href="<?php echo esc_url( $act_register_url ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-act-register-btn" style="display:inline-block;width:auto;text-align:center;margin-top:4px;">
+                    สมัครเลย →
+                </a>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php $act_modals_html .= ob_get_clean(); ?>
         <?php endwhile; ?>
     </div>
+    <?php echo $act_modals_html; ?>
+    <div id="lfciath-act-modal-overlay" class="lfciath-act-modal-overlay" hidden></div>
     <?php endif; ?>
 
     </div>
@@ -1347,6 +1391,35 @@ function lfciath_build_activity_schedule( $atts ) {
     endif; // end past_query have_posts
     ?>
 
+    <script>
+    (function(){
+        function openModal(id) {
+            var m = document.getElementById(id);
+            var o = document.getElementById('lfciath-act-modal-overlay');
+            if (!m || !o) return;
+            m.removeAttribute('hidden');
+            o.removeAttribute('hidden');
+            document.body.style.overflow = 'hidden';
+            m.querySelector('.lfciath-act-modal-close').focus();
+        }
+        function closeAll() {
+            document.querySelectorAll('.lfciath-act-modal').forEach(function(m){ m.setAttribute('hidden',''); });
+            var o = document.getElementById('lfciath-act-modal-overlay');
+            if (o) o.setAttribute('hidden','');
+            document.body.style.overflow = '';
+        }
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('lfciath-act-readmore-btn')) {
+                openModal(e.target.dataset.modal);
+            }
+            if (e.target.classList.contains('lfciath-act-modal-close')) { closeAll(); }
+            if (e.target.id === 'lfciath-act-modal-overlay') { closeAll(); }
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') { closeAll(); }
+        });
+    })();
+    </script>
     <?php
     wp_reset_postdata();
     return ob_get_clean();
@@ -1521,6 +1594,107 @@ function lfciath_activity_enqueue_css() {
 .lfciath-act-register-btn:hover {
     background: var(--lfc-red-dark, #A50D22);
     color: #fff !important;
+}
+/* Read more button */
+.lfciath-act-readmore-btn {
+    display: inline-block;
+    margin-top: 6px;
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--lfc-red, #C8102E);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--lfc-font-thai, sans-serif);
+    text-decoration: underline;
+}
+.lfciath-act-readmore-btn:hover { color: var(--lfc-red-dark, #A50D22); }
+/* Modal overlay */
+.lfciath-act-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.72);
+    z-index: 99998;
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+}
+/* Modal container */
+.lfciath-act-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+.lfciath-act-modal-inner {
+    background: #fff;
+    border-radius: 14px;
+    max-width: 480px;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    position: relative;
+    padding: 24px 22px 22px;
+    box-shadow: 0 24px 64px rgba(0,0,0,.35);
+}
+.lfciath-act-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #f0f0f0;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    font-size: 15px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .2s;
+    z-index: 1;
+}
+.lfciath-act-modal-close:hover { background: #ddd; }
+.lfciath-act-modal-img {
+    width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: block;
+}
+.lfciath-act-modal-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 10px;
+    padding-right: 36px;
+    line-height: 1.4;
+    font-family: var(--lfc-font-thai, sans-serif);
+}
+.lfciath-act-modal-meta {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.9;
+    margin-bottom: 12px;
+    font-family: var(--lfc-font-thai, sans-serif);
+}
+.lfciath-act-modal-desc {
+    font-size: 14px;
+    color: #333;
+    line-height: 1.85;
+    margin-bottom: 18px;
+    white-space: pre-wrap;
+    font-family: var(--lfc-font-thai, sans-serif);
+}
+@media (max-width: 480px) {
+    .lfciath-act-modal-inner { padding: 18px 16px 18px; border-radius: 12px; }
+    .lfciath-act-modal-title { font-size: 15px; }
 }
 .lfciath-act-card-img {
     margin: 8px 0;
