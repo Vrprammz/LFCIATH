@@ -25,7 +25,7 @@
  * 4. Secret: ค่าเดียวกับ LFCIATH_GH_SECRET
  * 5. Events: Just the push event
  * ============================================================
- * @version  V.11.1
+ * @version  V.11.2
  * @updated  2026-03-24
  */
 
@@ -111,10 +111,12 @@ function lfciath_handle_github_webhook( WP_REST_Request $request ) {
     }
 
     // --- 3e. เช็ค branch ---
-    $branch        = defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : 'main';
+    // ถ้า LFCIATH_GH_BRANCH ไม่ได้กำหนด หรือกำหนดเป็น "*" → รับทุก branch
+    $branch        = defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : '';
     $pushed_branch = str_replace( 'refs/heads/', '', $data['ref'] ?? '' );
-    if ( $pushed_branch !== $branch ) {
-        return new WP_REST_Response( array( 'status' => 'ignored', 'reason' => 'branch_mismatch' ), 200 );
+    if ( $branch && '*' !== $branch && $pushed_branch !== $branch ) {
+        lfciath_webhook_log( "IGNORED: branch mismatch (pushed={$pushed_branch}, expected={$branch}) — update LFCIATH_GH_BRANCH in wp-config.php if wrong" );
+        return new WP_REST_Response( array( 'status' => 'ignored', 'reason' => 'branch_mismatch', 'pushed' => $pushed_branch, 'expected' => $branch ), 200 );
     }
 
     // --- 3f. Schedule sync ใน shutdown hook (ป้องกัน GitHub timeout 10s) ---
