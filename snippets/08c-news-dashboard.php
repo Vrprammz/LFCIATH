@@ -1103,7 +1103,7 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
         'training' => 'ฝึกซ้อม',
         'match'    => 'แข่งขัน',
         'event'    => 'กิจกรรม',
-        'camp'     => 'ค่าย',
+        'camp'     => 'แคมป์',
         'other'    => 'อื่นๆ',
     );
 
@@ -1254,7 +1254,7 @@ function lfciath_cc_view_list_activities( $base_url ) {
         'training' => 'ฝึกซ้อม',
         'match'    => 'แข่งขัน',
         'event'    => 'กิจกรรม',
-        'camp'     => 'ค่าย',
+        'camp'     => 'แคมป์',
         'other'    => 'อื่นๆ',
     );
 

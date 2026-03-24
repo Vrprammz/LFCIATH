@@ -68,7 +68,7 @@ function lfciath_get_activity_types() {
         'training' => array( 'label' => 'ฝึกซ้อม', 'color' => '#C8102E', 'icon' => '⚽' ),
         'match'    => array( 'label' => 'แข่งขัน', 'color' => '#1A1A1A', 'icon' => '🏆' ),
         'event'    => array( 'label' => 'กิจกรรม', 'color' => '#1565C0', 'icon' => '🎉' ),
-        'camp'     => array( 'label' => 'ค่าย',     'color' => '#2E7D32', 'icon' => '⛺' ),
+        'camp'     => array( 'label' => 'แคมป์',    'color' => '#2E7D32', 'icon' => '⛺' ),
         'other'    => array( 'label' => 'อื่นๆ',   'color' => '#E65100', 'icon' => '📅' ),
     );
 }
