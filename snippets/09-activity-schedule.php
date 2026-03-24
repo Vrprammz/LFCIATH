@@ -8,7 +8,7 @@
  * ระบบจัดการตารางกิจกรรม: วัน เวลา สถานที่ ชื่อกิจกรรม
  * Shortcode: [lfciath_activity_schedule count="10" show_past="no" type="" view="cards" age_group="" show_filter="no"]
  * ============================================================
- * @version  V.12
+ * @version  V.12.1
  * @updated  2026-03-24
  */
 
@@ -856,13 +856,24 @@ function lfciath_build_activity_schedule( $atts ) {
                 $act_type    = get_post_meta( $act_id, 'activity_type',         true );
                 $act_age     = get_post_meta( $act_id, 'activity_age_group',    true );
                 $act_status  = get_post_meta( $act_id, 'activity_status',       true );
+                $act_date_end = get_post_meta( $act_id, 'activity_date_end',     true );
                 $act_desc    = get_post_meta( $act_id, 'activity_description',  true );
                 $type_info   = isset( $types[ $act_type ] ) ? $types[ $act_type ] : $types['other'];
+
+                $is_multiday_t = $act_date_end && $act_date_end !== $act_date && $act_date_end > $act_date;
 
                 $d        = $act_date ? explode( '-', $act_date ) : array( '', '', '' );
                 $day_num  = isset( $d[2] ) ? ltrim( $d[2], '0' ) : '';
                 $month_th = isset( $d[1] ) && isset( $thai_months[ $d[1] ] ) ? $thai_months[ $d[1] ] : '';
                 $year_th  = isset( $d[0] ) ? ( intval( $d[0] ) + 543 ) : '';
+
+                if ( $is_multiday_t ) {
+                    $de2      = explode( '-', $act_date_end );
+                    $end_d    = isset( $de2[2] ) ? ltrim( $de2[2], '0' ) : '';
+                    $end_m_th = isset( $de2[1] ) && isset( $thai_months[ $de2[1] ] ) ? $thai_months[ $de2[1] ] : '';
+                    $end_y_th = isset( $de2[0] ) ? ( intval( $de2[0] ) + 543 ) : '';
+                    $same_m   = ( $d[0] === $de2[0] ) && ( $d[1] === $de2[1] );
+                }
 
                 $time_html = $act_time_s ? esc_html( $act_time_s ) : '—';
                 if ( $act_time_s && $act_time_e ) {
@@ -870,12 +881,17 @@ function lfciath_build_activity_schedule( $atts ) {
                 }
 
                 $is_cancelled = ( 'cancelled' === $act_status );
-                $is_past      = $act_date && $act_date < $today;
+                $is_past      = $act_date_end ? ( $act_date_end < $today ) : ( $act_date && $act_date < $today );
                 ?>
                 <tr class="lfciath-act-row <?php echo $is_past ? 'is-past' : ''; ?> <?php echo $is_cancelled ? 'is-cancelled' : ''; ?>">
                     <td class="lfciath-act-date-cell">
-                        <strong class="lfciath-act-day"><?php echo esc_html( $day_num ); ?></strong>
-                        <span class="lfciath-act-month"><?php echo esc_html( $month_th . ' ' . $year_th ); ?></span>
+                        <?php if ( $is_multiday_t ) : ?>
+                            <strong class="lfciath-act-day" style="font-size:13px;"><?php echo esc_html( $day_num . '–' . $end_d ); ?></strong>
+                            <span class="lfciath-act-month"><?php echo esc_html( ( $same_m ? $month_th : $month_th . '–' . $end_m_th ) . ' ' . $year_th ); ?></span>
+                        <?php else : ?>
+                            <strong class="lfciath-act-day"><?php echo esc_html( $day_num ); ?></strong>
+                            <span class="lfciath-act-month"><?php echo esc_html( $month_th . ' ' . $year_th ); ?></span>
+                        <?php endif; ?>
                     </td>
                     <td class="lfciath-act-time-cell">
                         <?php echo wp_kses( $time_html, array( 'br' => array(), 'small' => array() ) ); ?>
@@ -929,15 +945,25 @@ function lfciath_build_activity_schedule( $atts ) {
         $act_age     = get_post_meta( $act_id, 'activity_age_group',    true );
         $act_status  = get_post_meta( $act_id, 'activity_status',       true );
         $act_desc    = get_post_meta( $act_id, 'activity_description',  true );
-        $act_img_id  = (int) get_post_meta( $act_id, 'activity_image_id', true );
-        $act_img_url = $act_img_id ? wp_get_attachment_image_url( $act_img_id, 'medium' ) : '';
-        $type_info   = isset( $types[ $act_type ] ) ? $types[ $act_type ] : $types['other'];
+        $act_date_end = get_post_meta( $act_id, 'activity_date_end', true );
+        $act_img_id   = (int) get_post_meta( $act_id, 'activity_image_id', true );
+        $act_img_url  = $act_img_id ? wp_get_attachment_image_url( $act_img_id, 'medium' ) : '';
+        $type_info    = isset( $types[ $act_type ] ) ? $types[ $act_type ] : $types['other'];
+
+        $is_multiday  = $act_date_end && $act_date_end !== $act_date && $act_date_end > $act_date;
 
         $d        = $act_date ? explode( '-', $act_date ) : array( '', '', '' );
         $day_num  = isset( $d[2] ) ? ltrim( $d[2], '0' ) : '';
         $month_th = isset( $d[1] ) && isset( $thai_months[ $d[1] ] ) ? $thai_months[ $d[1] ] : '';
         $year_th  = isset( $d[0] ) ? ( intval( $d[0] ) + 543 ) : '';
         $dow      = $act_date ? lfciath_thai_day_abbr( (int) wp_date( 'w', strtotime( $act_date ) ) ) : '';
+
+        // End date parts for multi-day
+        $de           = $is_multiday ? explode( '-', $act_date_end ) : array();
+        $end_day      = isset( $de[2] ) ? ltrim( $de[2], '0' ) : '';
+        $end_month_th = isset( $de[1] ) && isset( $thai_months[ $de[1] ] ) ? $thai_months[ $de[1] ] : '';
+        $end_year_th  = isset( $de[0] ) ? ( intval( $de[0] ) + 543 ) : '';
+        $same_month   = $is_multiday && ( $d[0] === $de[0] ) && ( $d[1] === $de[1] );
 
         $time_display = '';
         if ( $act_time_s ) {
@@ -948,17 +974,24 @@ function lfciath_build_activity_schedule( $atts ) {
         }
 
         $is_cancelled = ( 'cancelled' === $act_status );
-        $is_past      = $act_date && $act_date < $today;
+        $is_past      = $act_date_end ? ( $act_date_end < $today ) : ( $act_date && $act_date < $today );
         ?>
         <div class="lfciath-activity-card <?php echo $is_past ? 'is-past' : ''; ?> <?php echo $is_cancelled ? 'is-cancelled' : ''; ?>"
              style="--act-color:<?php echo esc_attr( $type_info['color'] ); ?>;">
 
             <!-- Date Column -->
             <div class="lfciath-act-date-col" style="background:<?php echo esc_attr( $type_info['color'] ); ?>;">
-                <span class="lfciath-act-dow"><?php echo esc_html( $dow ); ?></span>
-                <span class="lfciath-act-day-big"><?php echo esc_html( $day_num ); ?></span>
-                <span class="lfciath-act-month-sm"><?php echo esc_html( $month_th ); ?></span>
-                <span class="lfciath-act-year-sm"><?php echo esc_html( $year_th ); ?></span>
+                <?php if ( $is_multiday ) : ?>
+                    <span class="lfciath-act-dow" style="font-size:9px;letter-spacing:.3px;">ช่วงเวลา</span>
+                    <span class="lfciath-act-day-big" style="font-size:18px;line-height:1.1;"><?php echo esc_html( $day_num . '–' . $end_day ); ?></span>
+                    <span class="lfciath-act-month-sm"><?php echo esc_html( $same_month ? $month_th : $month_th . '–' . $end_month_th ); ?></span>
+                    <span class="lfciath-act-year-sm"><?php echo esc_html( $year_th ); ?></span>
+                <?php else : ?>
+                    <span class="lfciath-act-dow"><?php echo esc_html( $dow ); ?></span>
+                    <span class="lfciath-act-day-big"><?php echo esc_html( $day_num ); ?></span>
+                    <span class="lfciath-act-month-sm"><?php echo esc_html( $month_th ); ?></span>
+                    <span class="lfciath-act-year-sm"><?php echo esc_html( $year_th ); ?></span>
+                <?php endif; ?>
             </div>
 
             <!-- Content Column -->

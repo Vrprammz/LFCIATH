@@ -25,7 +25,7 @@
  * 4. Secret: ค่าเดียวกับ LFCIATH_GH_SECRET
  * 5. Events: Just the push event
  * ============================================================
- * @version  V.12
+ * @version  V.12.1
  * @updated  2026-03-24
  */
 
@@ -58,10 +58,65 @@ function lfciath_register_webhook_endpoint() {
     register_rest_route( 'lfciath/v1', '/github-webhook', array(
         'methods'             => 'POST',
         'callback'            => 'lfciath_handle_github_webhook',
-        'permission_callback' => '__return_true', // ตรวจสอบ signature ใน callback แทน
+        'permission_callback' => '__return_true',
+    ) );
+    // Force-sync endpoint: POST /wp-json/lfciath/v1/force-sync  { "secret": "LFCIATH_GH_SECRET" }
+    register_rest_route( 'lfciath/v1', '/force-sync', array(
+        'methods'             => 'POST',
+        'callback'            => 'lfciath_handle_force_sync',
+        'permission_callback' => '__return_true',
     ) );
 }
 add_action( 'rest_api_init', 'lfciath_register_webhook_endpoint' );
+
+// ============================================================
+// Force-sync endpoint — sync ทุก snippet จาก GitHub ทันที
+// POST /wp-json/lfciath/v1/force-sync   body: {"secret":"..."}
+// ============================================================
+function lfciath_handle_force_sync( WP_REST_Request $request ) {
+    if ( ! defined( 'LFCIATH_GH_SECRET' ) ) {
+        return new WP_REST_Response( array( 'error' => 'server_misconfigured' ), 500 );
+    }
+    $secret = $request->get_param( 'secret' ) ?: '';
+    if ( ! hash_equals( LFCIATH_GH_SECRET, $secret ) ) {
+        lfciath_webhook_log( 'FORCE-SYNC: invalid secret' );
+        return new WP_REST_Response( array( 'error' => 'invalid_secret' ), 401 );
+    }
+
+    $branch = defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : 'main';
+    if ( '*' === $branch || '' === $branch ) {
+        $branch = 'main';
+    }
+
+    lfciath_webhook_log( "FORCE-SYNC: triggered by manual request (branch={$branch})" );
+
+    $map    = lfciath_github_snippet_map();
+    $synced = 0;
+    $errors = array();
+
+    foreach ( array_keys( $map ) as $file ) {
+        $result = lfciath_sync_snippet_from_github( $file, $map[ $file ], $branch );
+        lfciath_webhook_log( "[{$result}] {$file} → {$map[$file]}" );
+        if ( 'updated' === $result ) {
+            $synced++;
+        } elseif ( in_array( $result, array( 'snippet_not_found', 'api_error', 'db_error', 'decode_error', 'empty_content' ), true ) ) {
+            $errors[] = $file . ': ' . $result;
+        }
+    }
+
+    wp_cache_flush();
+    delete_transient( 'code_snippets' );
+    delete_transient( 'code_snippets_active' );
+    if ( function_exists( 'opcache_reset' ) ) { @opcache_reset(); }
+
+    return new WP_REST_Response( array(
+        'status'  => 'done',
+        'synced'  => $synced,
+        'total'   => count( $map ),
+        'errors'  => $errors,
+        'branch'  => $branch,
+    ), 200 );
+}
 
 // ============================================================
 // 3. Webhook Handler — ตอบ 200 ทันที, sync ใน shutdown hook
@@ -432,6 +487,47 @@ define( 'LFCIATH_GH_BRANCH', '<span style="color:#ce9178;">main</span>' );</pre>
                 </tbody>
             </table>
         </div>
+
+        <!-- Force Sync Button -->
+        <?php if ( defined( 'LFCIATH_GH_SECRET' ) ) : ?>
+        <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:16px 20px;max-width:800px;margin-bottom:16px;display:flex;align-items:center;gap:16px;">
+            <div style="flex:1;">
+                <strong style="font-size:14px;">Sync ทุก Snippet จาก GitHub ทันที</strong>
+                <p style="margin:2px 0 0;font-size:12px;color:#888;">ดึงไฟล์ทุกตัวจาก branch ที่ตั้งค่าไว้ อัปเดต DB โดยไม่ต้องรอ webhook</p>
+            </div>
+            <button id="lfciath-force-sync-btn" class="button button-primary" style="white-space:nowrap;">⬇ Sync Now</button>
+            <span id="lfciath-force-sync-status" style="font-size:13px;color:#888;display:none;"></span>
+        </div>
+        <script>
+        (function(){
+            var btn = document.getElementById('lfciath-force-sync-btn');
+            var status = document.getElementById('lfciath-force-sync-status');
+            if (!btn) return;
+            btn.addEventListener('click', function(){
+                btn.disabled = true; btn.textContent = 'กำลัง Sync…';
+                status.style.display = ''; status.textContent = '';
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', '<?php echo esc_url( rest_url( 'lfciath/v1/force-sync' ) ); ?>');
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.setRequestHeader('X-WP-Nonce', '<?php echo wp_create_nonce( 'wp_rest' ); ?>');
+                xhr.onload = function(){
+                    var r = JSON.parse(xhr.responseText || '{}');
+                    if (r.synced !== undefined) {
+                        status.style.color = '#22c55e';
+                        status.textContent = '✓ Synced ' + r.synced + '/' + r.total + (r.errors && r.errors.length ? ' — errors: ' + r.errors.join(', ') : '');
+                    } else {
+                        status.style.color = '#ef4444';
+                        status.textContent = '✗ ' + (r.error || 'เกิดข้อผิดพลาด');
+                    }
+                    btn.disabled = false; btn.textContent = '⬇ Sync Now';
+                    setTimeout(function(){ location.reload(); }, 2000);
+                };
+                xhr.onerror = function(){ btn.disabled = false; btn.textContent = '⬇ Sync Now'; status.style.color='#ef4444'; status.textContent='Network error'; };
+                xhr.send(JSON.stringify({ secret: '<?php echo defined("LFCIATH_GH_SECRET") ? esc_js( LFCIATH_GH_SECRET ) : ""; ?>' }));
+            });
+        })();
+        </script>
+        <?php endif; ?>
 
         <!-- Sync Log -->
         <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:20px;max-width:800px;">

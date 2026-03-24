@@ -5,7 +5,7 @@
  * ต้อง Activate snippet 8A ก่อน
  * เก็บข้อมูลใน wp_options (ไม่ต้อง ACF)
  * ============================================================
- * @version  V.12
+ * @version  V.12.1
  * @updated  2026-03-24
  */
 
@@ -1082,6 +1082,7 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
 
     $v_title       = $post_obj ? $post_obj->post_title                                    : '';
     $v_date        = $post_id  ? get_post_meta( $post_id, 'activity_date',        true )  : '';
+    $v_date_end    = $post_id  ? get_post_meta( $post_id, 'activity_date_end',    true )  : '';
     $v_time_start  = $post_id  ? get_post_meta( $post_id, 'activity_time_start',  true )  : '';
     $v_time_end    = $post_id  ? get_post_meta( $post_id, 'activity_time_end',    true )  : '';
     $v_type        = $post_id  ? get_post_meta( $post_id, 'activity_type',        true )  : 'training';
@@ -1135,8 +1136,16 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
                     <?php endforeach; ?>
                 </select>
 
-                <label class="lfciath-cc-label">วันที่ *</label>
-                <input type="date" name="activity_date" value="<?php echo esc_attr( $v_date ); ?>" class="lfciath-cc-input" required style="margin-bottom:12px;" />
+                <div style="display:flex;gap:12px;margin-bottom:12px;">
+                    <div style="flex:1;">
+                        <label class="lfciath-cc-label">วันที่เริ่ม *</label>
+                        <input type="date" name="activity_date" value="<?php echo esc_attr( $v_date ); ?>" class="lfciath-cc-input" required />
+                    </div>
+                    <div style="flex:1;">
+                        <label class="lfciath-cc-label">วันที่สิ้นสุด <small style="font-weight:400;color:#aaa;">(ถ้าหลายวัน)</small></label>
+                        <input type="date" name="activity_date_end" value="<?php echo esc_attr( $v_date_end ); ?>" class="lfciath-cc-input" />
+                    </div>
+                </div>
 
                 <div style="display:flex;gap:12px;margin-bottom:12px;">
                     <div style="flex:1;">
@@ -1274,8 +1283,9 @@ function lfciath_cc_view_list_activities( $base_url ) {
             <tbody>
             <?php if ( ! empty( $posts ) ) : foreach ( $posts as $p ) :
                 $pid        = $p->ID;
-                $act_date   = get_post_meta( $pid, 'activity_date',       true );
-                $time_start = get_post_meta( $pid, 'activity_time_start', true );
+                $act_date     = get_post_meta( $pid, 'activity_date',       true );
+                $act_date_end = get_post_meta( $pid, 'activity_date_end',   true );
+                $time_start   = get_post_meta( $pid, 'activity_time_start', true );
                 $time_end   = get_post_meta( $pid, 'activity_time_end',   true );
                 $act_type   = get_post_meta( $pid, 'activity_type',       true );
                 $location   = get_post_meta( $pid, 'activity_location',   true );
@@ -1304,7 +1314,18 @@ function lfciath_cc_view_list_activities( $base_url ) {
             <tr>
                 <td style="font-weight:600;"><?php echo esc_html( $p->post_title ); ?></td>
                 <td><span class="lfciath-cc-badge lfciath-cc-badge-gray"><?php echo esc_html( $type_label ); ?></span></td>
-                <td style="font-size:12px;white-space:nowrap;"><?php echo esc_html( $act_date ); ?></td>
+                <td style="font-size:12px;white-space:nowrap;">
+                    <?php
+                    if ( $act_date_end && $act_date_end !== $act_date ) {
+                        // แสดงช่วง: 06/04 - 08/04
+                        $d1 = $act_date     ? date( 'd/m', strtotime( $act_date ) )     : '';
+                        $d2 = $act_date_end ? date( 'd/m', strtotime( $act_date_end ) ) : '';
+                        echo esc_html( $d1 . ' – ' . $d2 );
+                    } else {
+                        echo esc_html( $act_date );
+                    }
+                    ?>
+                </td>
                 <td style="font-size:12px;white-space:nowrap;"><?php echo $time_str; ?></td>
                 <td style="font-size:12px;color:#555555;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?php echo esc_html( $location ); ?></td>
                 <td><span class="lfciath-cc-badge <?php echo esc_attr( $status_info['badge'] ); ?>"><?php echo esc_html( $status_info['label'] ); ?></span></td>
@@ -1339,6 +1360,7 @@ function lfciath_handle_cc_save_activity() {
 
     $title       = isset( $_POST['activity_title'] )       ? sanitize_text_field( wp_unslash( $_POST['activity_title'] ) )           : '';
     $date        = isset( $_POST['activity_date'] )        ? sanitize_text_field( wp_unslash( $_POST['activity_date'] ) )            : '';
+    $date_end    = isset( $_POST['activity_date_end'] )    ? sanitize_text_field( wp_unslash( $_POST['activity_date_end'] ) )        : '';
     $time_start  = isset( $_POST['activity_time_start'] )  ? sanitize_text_field( wp_unslash( $_POST['activity_time_start'] ) )      : '';
     $time_end    = isset( $_POST['activity_time_end'] )    ? sanitize_text_field( wp_unslash( $_POST['activity_time_end'] ) )        : '';
     $type        = isset( $_POST['activity_type'] )        ? sanitize_text_field( wp_unslash( $_POST['activity_type'] ) )            : 'other';
@@ -1372,6 +1394,11 @@ function lfciath_handle_cc_save_activity() {
 
     if ( $post_id > 0 && ! is_wp_error( $result ) ) {
         update_post_meta( $post_id, 'activity_date',        $date );
+        if ( $date_end && $date_end > $date ) {
+            update_post_meta( $post_id, 'activity_date_end', $date_end );
+        } else {
+            delete_post_meta( $post_id, 'activity_date_end' );
+        }
         update_post_meta( $post_id, 'activity_time_start',  $time_start );
         update_post_meta( $post_id, 'activity_time_end',    $time_end );
         update_post_meta( $post_id, 'activity_type',        $type );
