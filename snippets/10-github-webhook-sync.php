@@ -64,7 +64,7 @@ function lfciath_register_webhook_endpoint() {
 add_action( 'rest_api_init', 'lfciath_register_webhook_endpoint' );
 
 // ============================================================
-// 3. Webhook Handler
+// 3. Webhook Handler — ตอบ 200 ทันที, sync ใน shutdown hook
 // ============================================================
 function lfciath_handle_github_webhook( WP_REST_Request $request ) {
 
@@ -75,7 +75,7 @@ function lfciath_handle_github_webhook( WP_REST_Request $request ) {
         return new WP_REST_Response( array( 'error' => 'server_misconfigured' ), 500 );
     }
 
-    // --- 3b. ตรวจสอบ GitHub Signature (HMAC SHA-256) ---
+    // --- 3b. HMAC-SHA256 Signature ---
     $signature_header = $request->get_header( 'X-Hub-Signature-256' );
     $raw_body         = $request->get_body();
 
@@ -90,166 +90,236 @@ function lfciath_handle_github_webhook( WP_REST_Request $request ) {
         return new WP_REST_Response( array( 'error' => 'invalid_signature' ), 401 );
     }
 
-    // --- 3c. รับเฉพาะ push event ---
+    // --- 3c. Parse payload — รองรับ JSON + form-encoded ---
+    $data = json_decode( $raw_body, true );
+    if ( empty( $data ) || ! is_array( $data ) ) {
+        $form = array();
+        wp_parse_str( $raw_body, $form );
+        if ( ! empty( $form['payload'] ) ) {
+            $data = json_decode( $form['payload'], true );
+        }
+    }
+    if ( empty( $data ) || ! is_array( $data ) ) {
+        lfciath_webhook_log( 'ERROR: Cannot parse payload (body_len=' . strlen( $raw_body ) . ')' );
+        return new WP_REST_Response( array( 'error' => 'invalid_payload' ), 400 );
+    }
+
+    // --- 3d. เฉพาะ push event ---
     $event = $request->get_header( 'X-GitHub-Event' );
     if ( 'push' !== $event ) {
         return new WP_REST_Response( array( 'status' => 'ignored', 'event' => $event ), 200 );
     }
 
-    // --- 3d. Parse payload ---
-    // ใช้ raw_body ที่อ่านไว้แล้ว แทน get_json_params() ซึ่งต้องการ Content-Type ตรงเป๊ะ
-    $payload = json_decode( $raw_body, true );
-    if ( empty( $payload ) || ! is_array( $payload ) ) {
-        lfciath_webhook_log( 'ERROR: Empty or invalid JSON payload' );
-        return new WP_REST_Response( array( 'error' => 'invalid_payload' ), 400 );
-    }
-
-    // เช็ค branch ที่ตั้งค่าไว้
-    $branch       = defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : 'main';
-    $pushed_ref   = $payload['ref'] ?? '';
-    $pushed_branch = str_replace( 'refs/heads/', '', $pushed_ref );
-
+    // --- 3e. เช็ค branch ---
+    $branch        = defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : 'main';
+    $pushed_branch = str_replace( 'refs/heads/', '', $data['ref'] ?? '' );
     if ( $pushed_branch !== $branch ) {
-        return new WP_REST_Response( array(
-            'status'  => 'ignored',
-            'reason'  => 'branch_mismatch',
-            'pushed'  => $pushed_branch,
-            'watched' => $branch,
-        ), 200 );
+        return new WP_REST_Response( array( 'status' => 'ignored', 'reason' => 'branch_mismatch' ), 200 );
     }
 
-    // --- 3e. รวบรวมไฟล์ที่เปลี่ยนแปลงจากทุก commit ---
-    $changed_files = array();
-    $commits = $payload['commits'] ?? array();
-    foreach ( $commits as $commit ) {
-        foreach ( array( 'added', 'modified' ) as $change_type ) {
-            if ( ! empty( $commit[ $change_type ] ) ) {
-                foreach ( $commit[ $change_type ] as $file ) {
-                    $changed_files[ $file ] = true;
-                }
+    // --- 3f. Schedule sync ใน shutdown hook (ป้องกัน GitHub timeout 10s) ---
+    $GLOBALS['_lfciath_pending_sync'] = $data;
+    add_action( 'shutdown', 'lfciath_webhook_sync_on_shutdown', 0 );
+
+    // WP-Cron backup (30s delay — ให้ shutdown ทำก่อน)
+    $job_id = 'lfciath_sync_' . substr( md5( $raw_body ), 0, 12 );
+    set_transient( $job_id, $data, 600 );
+    wp_schedule_single_event( time() + 30, 'lfciath_webhook_sync_cron', array( $job_id ) );
+
+    return new WP_REST_Response( array( 'status' => 'sync_scheduled', 'job_id' => $job_id ), 200 );
+}
+
+// ============================================================
+// 3b. Shutdown Hook — ทำงานหลัง response ส่งแล้ว
+// ============================================================
+function lfciath_webhook_sync_on_shutdown() {
+    if ( empty( $GLOBALS['_lfciath_pending_sync'] ) ) return;
+    $data = $GLOBALS['_lfciath_pending_sync'];
+    unset( $GLOBALS['_lfciath_pending_sync'] );
+
+    if ( function_exists( 'fastcgi_finish_request' ) ) {
+        fastcgi_finish_request(); // ส่ง response ก่อน, sync ทีหลัง
+    }
+
+    @set_time_limit( 120 );
+    ignore_user_abort( true );
+    lfciath_do_webhook_sync( $data, 'shutdown' );
+}
+
+// ============================================================
+// 3c. WP-Cron Backup
+// ============================================================
+add_action( 'lfciath_webhook_sync_cron', 'lfciath_webhook_sync_cron_job' );
+function lfciath_webhook_sync_cron_job( $job_id ) {
+    $data = get_transient( $job_id );
+    if ( ! $data ) return; // shutdown hook ทำไปแล้ว
+    delete_transient( $job_id );
+    lfciath_do_webhook_sync( $data, 'cron' );
+}
+
+// ============================================================
+// 3d. Shared Sync Logic
+// ============================================================
+function lfciath_do_webhook_sync( $data, $trigger = 'unknown' ) {
+
+    // Execution lock — ป้องกัน double-run
+    if ( get_transient( 'lfciath_sync_running' ) ) {
+        lfciath_webhook_log( "SKIP: already running (trigger={$trigger})" );
+        return;
+    }
+    set_transient( 'lfciath_sync_running', $trigger, 120 );
+
+    try {
+        // ตรวจ merge commit (empty commits array)
+        $head_msg  = $data['head_commit']['message'] ?? '';
+        $is_merge  = (bool) preg_match( '/^Merge (pull request|branch)\b/i', $head_msg );
+
+        // รวบรวมไฟล์ที่เปลี่ยน
+        $changed = array();
+        foreach ( $data['commits'] ?? array() as $c ) {
+            foreach ( array_merge( $c['added'] ?? array(), $c['modified'] ?? array() ) as $f ) {
+                $changed[ $f ] = true;
             }
         }
-    }
-
-    if ( empty( $changed_files ) ) {
-        return new WP_REST_Response( array( 'status' => 'no_files_changed' ), 200 );
-    }
-
-    // --- 3f. Sync ไฟล์ที่อยู่ใน map ---
-    $snippet_map = lfciath_github_snippet_map();
-    $results     = array();
-
-    foreach ( $changed_files as $file => $_ ) {
-        if ( ! isset( $snippet_map[ $file ] ) ) {
-            continue; // ไม่ใช่ไฟล์ snippet — ข้าม
+        foreach ( array_merge( $data['head_commit']['added'] ?? array(), $data['head_commit']['modified'] ?? array() ) as $f ) {
+            $changed[ $f ] = true;
         }
 
-        $snippet_name = $snippet_map[ $file ];
-        $result       = lfciath_sync_snippet_from_github( $file, $snippet_name );
-        $results[]    = array( 'file' => $file, 'snippet' => $snippet_name, 'status' => $result );
-        lfciath_webhook_log( sprintf( '[%s] %s → %s', $result, $file, $snippet_name ) );
-    }
+        $snippet_map = lfciath_github_snippet_map();
 
-    return new WP_REST_Response( array(
-        'status'  => 'ok',
-        'synced'  => count( array_filter( $results, fn( $r ) => $r['status'] === 'updated' ) ),
-        'results' => $results,
-    ), 200 );
+        // Merge commit → sync ทุกไฟล์ใน map
+        if ( $is_merge ) {
+            lfciath_webhook_log( "Merge commit detected → full sync ({$trigger})" );
+            foreach ( array_keys( $snippet_map ) as $f ) $changed[ $f ] = true;
+        }
+
+        $commit_sha = $data['after'] ?? ( defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : 'main' );
+        $synced = 0;
+
+        foreach ( $changed as $file => $_ ) {
+            if ( ! isset( $snippet_map[ $file ] ) ) continue;
+            $result = lfciath_sync_snippet_from_github( $file, $snippet_map[ $file ], $commit_sha );
+            lfciath_webhook_log( "[{$result}] {$file} → {$snippet_map[$file]}" );
+            if ( 'updated' === $result ) $synced++;
+        }
+
+        if ( 0 === $synced && empty( $changed ) ) {
+            lfciath_webhook_log( "No snippet files changed ({$trigger})" );
+        }
+
+        // Global cache flush หลัง sync เสร็จ
+        wp_cache_flush();
+        delete_transient( 'code_snippets' );
+        delete_transient( 'code_snippets_active' );
+        if ( function_exists( 'opcache_reset' ) ) {
+            @opcache_reset();
+        }
+        if ( function_exists( 'wpfc_clear_all_cache' ) ) {
+            wpfc_clear_all_cache( true );
+        }
+
+    } finally {
+        delete_transient( 'lfciath_sync_running' );
+    }
 }
 
 // ============================================================
 // 4. ดึงไฟล์จาก GitHub และอัปเดต Snippet ใน DB
 // ============================================================
-function lfciath_sync_snippet_from_github( $file_path, $snippet_name ) {
+function lfciath_sync_snippet_from_github( $file_path, $snippet_name, $commit_sha = '' ) {
     global $wpdb;
 
     $owner  = LFCIATH_GH_OWNER;
     $repo   = LFCIATH_GH_REPO;
-    $branch = defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : 'main';
+    $ref    = $commit_sha ?: ( defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : 'main' );
     $token  = LFCIATH_GH_TOKEN;
 
-    // GitHub Contents API
-    $api_url = sprintf(
-        'https://api.github.com/repos/%s/%s/contents/%s?ref=%s',
-        rawurlencode( $owner ),
-        rawurlencode( $repo ),
-        $file_path,
-        rawurlencode( $branch )
-    );
-
-    $response = wp_remote_get( $api_url, array(
-        'timeout' => 15,
+    // Primary: raw.githubusercontent.com + commit SHA (ไม่มี cache ปัญหา)
+    $raw_url  = "https://raw.githubusercontent.com/{$owner}/{$repo}/{$ref}/{$file_path}";
+    $response = wp_remote_get( $raw_url, array(
+        'timeout' => 20,
         'headers' => array(
-            'Authorization' => 'Bearer ' . $token,
-            'Accept'        => 'application/vnd.github.v3+json',
-            'User-Agent'    => 'LFCIATH-Webhook/1.0',
+            'Authorization' => 'token ' . $token,
+            'User-Agent'    => 'LFCIATH-Webhook/10',
         ),
     ) );
 
-    if ( is_wp_error( $response ) ) {
-        lfciath_webhook_log( 'GitHub API error: ' . $response->get_error_message() );
-        return 'api_error';
+    // Fallback: Contents API
+    if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+        $api_url  = sprintf(
+            'https://api.github.com/repos/%s/%s/contents/%s?ref=%s',
+            rawurlencode( $owner ), rawurlencode( $repo ),
+            $file_path, rawurlencode( $ref )
+        );
+        $response = wp_remote_get( $api_url, array(
+            'timeout' => 20,
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $token,
+                'Accept'        => 'application/vnd.github.v3.raw',
+                'User-Agent'    => 'LFCIATH-Webhook/10',
+            ),
+        ) );
+
+        if ( is_wp_error( $response ) ) {
+            lfciath_webhook_log( 'GitHub API error: ' . $response->get_error_message() );
+            return 'api_error';
+        }
+
+        // Contents API อาจส่ง JSON base64 แทน raw
+        $http_code = wp_remote_retrieve_response_code( $response );
+        if ( 200 !== $http_code ) {
+            lfciath_webhook_log( "GitHub HTTP {$http_code} for {$file_path}" );
+            return 'api_error';
+        }
+        $body_text = wp_remote_retrieve_body( $response );
+        $maybe_json = json_decode( $body_text, true );
+        if ( $maybe_json && ! empty( $maybe_json['content'] ) ) {
+            $body_text = base64_decode( str_replace( "\n", '', $maybe_json['content'] ), true );
+            if ( false === $body_text ) return 'decode_error';
+        }
+    } else {
+        $body_text = wp_remote_retrieve_body( $response );
     }
 
-    $http_code = wp_remote_retrieve_response_code( $response );
-    if ( 200 !== $http_code ) {
-        lfciath_webhook_log( "GitHub API returned HTTP {$http_code} for {$file_path}" );
-        return 'api_error';
-    }
+    if ( '' === trim( $body_text ) ) return 'empty_content';
 
-    $body = json_decode( wp_remote_retrieve_body( $response ), true );
-    if ( empty( $body['content'] ) ) {
-        return 'empty_content';
-    }
+    // Strip <?php tag
+    $code = preg_replace( '/^\s*<\?php\s*/i', '', $body_text );
 
-    // Decode base64 content จาก GitHub API
-    $code = base64_decode( str_replace( "\n", '', $body['content'] ), true );
-    if ( false === $code || '' === $code ) {
-        return 'decode_error';
-    }
-
-    // Strip opening <?php tag ถ้ามี (Code Snippets plugin เพิ่มให้เอง)
-    $code = preg_replace( '/^\s*<\?php\s*/i', '', $code );
-
-    // หา snippet ใน DB โดยชื่อ
+    // DB lookup
     $table = $wpdb->prefix . 'snippets';
-
-    // ตรวจสอบว่าตารางมีอยู่จริง
     if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
-        lfciath_webhook_log( "Table {$table} not found — Code Snippets plugin installed?" );
+        lfciath_webhook_log( "Table {$table} not found" );
         return 'table_not_found';
     }
 
+    // รองรับ DB name ที่มี &amp; (html entities)
+    $db_name    = html_entity_decode( $snippet_name, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
     $snippet_id = $wpdb->get_var( $wpdb->prepare(
         "SELECT id FROM `{$table}` WHERE name = %s LIMIT 1",
-        $snippet_name
+        $db_name
     ) );
-
     if ( ! $snippet_id ) {
         lfciath_webhook_log( "Snippet not found in DB: {$snippet_name}" );
         return 'snippet_not_found';
     }
 
-    $updated = $wpdb->update(
+    $ok = $wpdb->update(
         $table,
-        array(
-            'code'     => $code,
-            'modified' => current_time( 'mysql' ),
-        ),
+        array( 'code' => $code, 'modified' => current_time( 'mysql' ) ),
         array( 'id' => intval( $snippet_id ) ),
         array( '%s', '%s' ),
         array( '%d' )
     );
 
-    if ( false === $updated ) {
-        lfciath_webhook_log( "DB update failed for snippet ID {$snippet_id}" );
+    if ( false === $ok ) {
+        lfciath_webhook_log( "DB update failed: ID={$snippet_id}" );
         return 'db_error';
     }
 
-    // ล้าง opcode cache ถ้ามี
-    if ( function_exists( 'opcache_reset' ) ) {
-        opcache_reset();
-    }
+    // Per-snippet cache clear
+    wp_cache_delete( $snippet_id, 'code_snippets' );
+    wp_cache_delete( 'all_snippets', 'code_snippets' );
 
     return 'updated';
 }
