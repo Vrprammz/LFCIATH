@@ -420,3 +420,165 @@ function lfciath_webhook_log( $message ) {
     }
     update_option( 'lfciath_webhook_logs', $logs, false );
 }
+
+// ============================================================
+// 8. Shortcode: [lfciath_sys_dashboard]
+// ============================================================
+// แสดงสถานะ GitHub Sync — เฉพาะ admin/editor เท่านั้น
+// Usage: [lfciath_sys_dashboard]
+function lfciath_sys_dashboard_shortcode() {
+    if ( ! is_user_logged_in() || ! current_user_can( 'edit_posts' ) ) {
+        return '<p style="color:#999;font-size:13px;">🔒 เฉพาะ admin เท่านั้น</p>';
+    }
+
+    $logs        = get_option( 'lfciath_webhook_logs', array() );
+    $recent_logs = array_slice( array_reverse( $logs ), 0, 10 );
+    $last_sync   = ! empty( $logs ) ? end( $logs )['time'] : null;
+    $snippet_map = lfciath_github_snippet_map();
+
+    // ตรวจสอบ config
+    $configured  = defined( 'LFCIATH_GH_SECRET' ) && defined( 'LFCIATH_GH_TOKEN' ) &&
+                   defined( 'LFCIATH_GH_OWNER' )  && defined( 'LFCIATH_GH_REPO' );
+    $repo_url    = $configured
+        ? 'https://github.com/' . LFCIATH_GH_OWNER . '/' . LFCIATH_GH_REPO
+        : '';
+    $branch      = defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : 'main';
+
+    ob_start();
+    ?>
+    <div class="lfciath-sys-dash" style="font-family:'Sarabun',sans-serif;max-width:860px;margin:0 auto;">
+
+        <!-- Header -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid #C8102E;">
+            <span style="font-size:24px;">🔗</span>
+            <div>
+                <h2 style="margin:0;font-size:20px;font-weight:800;color:#1A1A1A;">GitHub Webhook Sync</h2>
+                <p style="margin:2px 0 0;font-size:13px;color:#888;">LFCIATH System Dashboard</p>
+            </div>
+            <div style="margin-left:auto;">
+                <?php if ( $configured ) : ?>
+                    <span style="background:#dcfce7;color:#166534;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">● CONFIGURED</span>
+                <?php else : ?>
+                    <span style="background:#fee2e2;color:#991b1b;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">● NOT CONFIGURED</span>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Status Cards -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px;">
+
+            <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:16px;border-top:3px solid #C8102E;">
+                <p style="margin:0 0 4px;font-size:12px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Repository</p>
+                <?php if ( $configured ) : ?>
+                    <a href="<?php echo esc_url( $repo_url ); ?>" target="_blank" rel="noopener"
+                       style="font-size:15px;font-weight:700;color:#1A1A1A;text-decoration:none;">
+                        <?php echo esc_html( LFCIATH_GH_OWNER . '/' . LFCIATH_GH_REPO ); ?>
+                    </a>
+                    <p style="margin:4px 0 0;font-size:12px;color:#888;">branch: <strong><?php echo esc_html( $branch ); ?></strong></p>
+                <?php else : ?>
+                    <p style="margin:0;font-size:13px;color:#999;">ยังไม่ได้ตั้งค่า</p>
+                <?php endif; ?>
+            </div>
+
+            <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:16px;border-top:3px solid #1565C0;">
+                <p style="margin:0 0 4px;font-size:12px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Last Sync</p>
+                <p style="margin:0;font-size:15px;font-weight:700;color:#1A1A1A;">
+                    <?php echo $last_sync ? esc_html( $last_sync ) : '<span style="color:#999;">ยังไม่มี</span>'; ?>
+                </p>
+            </div>
+
+            <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:16px;border-top:3px solid #2E7D32;">
+                <p style="margin:0 0 4px;font-size:12px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Snippets Mapped</p>
+                <p style="margin:0;font-size:28px;font-weight:800;color:#2E7D32;"><?php echo count( $snippet_map ); ?></p>
+            </div>
+
+            <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:16px;border-top:3px solid #E65100;">
+                <p style="margin:0 0 4px;font-size:12px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Total Log Entries</p>
+                <p style="margin:0;font-size:28px;font-weight:800;color:#E65100;"><?php echo count( $logs ); ?></p>
+            </div>
+
+        </div>
+
+        <!-- Endpoint URL -->
+        <div style="background:#f8fafc;border:1px solid #e5e5e5;border-radius:8px;padding:14px 16px;margin-bottom:20px;">
+            <p style="margin:0 0 6px;font-size:12px;color:#888;font-weight:600;text-transform:uppercase;letter-spacing:.5px;">Webhook Endpoint</p>
+            <code style="font-size:13px;color:#1A1A1A;word-break:break-all;">
+                <?php echo esc_html( rest_url( 'lfciath/v1/github-webhook' ) ); ?>
+            </code>
+        </div>
+
+        <!-- Snippet Map -->
+        <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;margin-bottom:20px;">
+            <div style="background:#1A1A1A;padding:12px 16px;">
+                <h3 style="margin:0;color:#fff;font-size:14px;font-weight:600;">📋 Snippet Map (<?php echo count( $snippet_map ); ?> files)</h3>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <?php
+                global $wpdb;
+                $table = $wpdb->prefix . 'snippets';
+                $table_exists = ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) === $table );
+                foreach ( $snippet_map as $file => $name ) :
+                    $exists = false;
+                    if ( $table_exists ) {
+                        $exists = (bool) $wpdb->get_var( $wpdb->prepare(
+                            "SELECT id FROM `{$table}` WHERE name = %s LIMIT 1", $name
+                        ) );
+                    }
+                ?>
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                    <td style="padding:8px 16px;width:45%;">
+                        <code style="font-size:12px;color:#555;"><?php echo esc_html( $file ); ?></code>
+                    </td>
+                    <td style="padding:8px 16px;">
+                        <?php echo esc_html( $name ); ?>
+                    </td>
+                    <td style="padding:8px 16px;width:80px;text-align:center;">
+                        <?php if ( $exists ) : ?>
+                            <span style="color:#166534;font-size:11px;font-weight:700;">✓ พบ</span>
+                        <?php else : ?>
+                            <span style="color:#991b1b;font-size:11px;font-weight:700;">✗ ไม่พบ</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </table>
+        </div>
+
+        <!-- Recent Sync Log -->
+        <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;overflow:hidden;">
+            <div style="background:#1A1A1A;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;">
+                <h3 style="margin:0;color:#fff;font-size:14px;font-weight:600;">📜 Sync Log ล่าสุด (10 รายการ)</h3>
+                <?php if ( current_user_can( 'manage_options' ) ) :
+                    $clear_url = wp_nonce_url(
+                        admin_url( 'admin-post.php?action=lfciath_clear_webhook_logs' ),
+                        'lfciath_clear_logs'
+                    );
+                ?>
+                <a href="<?php echo esc_url( $clear_url ); ?>"
+                   style="color:#aaa;font-size:12px;text-decoration:none;"
+                   onclick="return confirm('ล้าง log ทั้งหมด?')">ล้าง Log</a>
+                <?php endif; ?>
+            </div>
+            <?php if ( ! empty( $recent_logs ) ) : ?>
+            <div style="background:#111;padding:12px 16px;max-height:260px;overflow-y:auto;">
+                <?php foreach ( $recent_logs as $entry ) :
+                    $msg = $entry['message'] ?? '';
+                    $color = strpos( $msg, 'ERROR' ) !== false ? '#f87171'
+                           : ( strpos( $msg, 'updated' ) !== false ? '#86efac' : '#d4d4d4' );
+                ?>
+                <div style="font-family:monospace;font-size:12px;line-height:1.8;border-bottom:1px solid #222;padding:1px 0;">
+                    <span style="color:#666;"><?php echo esc_html( $entry['time'] ?? '' ); ?></span>
+                    <span style="color:<?php echo esc_attr( $color ); ?>;margin-left:8px;"><?php echo esc_html( $msg ); ?></span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php else : ?>
+            <p style="text-align:center;color:#999;padding:24px;margin:0;font-size:13px;">ยังไม่มี log — รอรับ webhook จาก GitHub</p>
+            <?php endif; ?>
+        </div>
+
+    </div>
+    <?php
+    return ob_get_clean();
+}
+add_shortcode( 'lfciath_sys_dashboard', 'lfciath_sys_dashboard_shortcode' );
