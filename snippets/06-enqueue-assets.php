@@ -613,45 +613,86 @@ function lfciath_get_news_css() {
     .lfciath-news-gallery-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 768px) {
-    .lfciath-news-hero { min-height: 360px; }
+    /* Hero banner — scale gracefully, no text crop */
+    .lfciath-news-hero { min-height: 280px; }
     .lfciath-news-hero-overlay { padding: 40px 5% 30px; }
+    /* Hero typography fluid clamp already handles scaling; add floor for safety */
+    .lfciath-news-title { font-size: clamp(22px, 6vw, 42px); }
+    .lfciath-news-subtitle { font-size: clamp(14px, 3.5vw, 20px); }
+    /* Meta + share */
     .lfciath-news-meta-wrapper { flex-direction: column; align-items: flex-start; }
     .lfciath-news-share { margin-left: 0; }
+    /* Highlight layout — single column */
     .lfciath-news-highlight.has-banner { grid-template-columns: 1fr; }
-    .lfciath-news-sidebar-widgets { flex-direction: row; overflow-x: auto; gap: 10px; }
-    .lfciath-sidebar-widget { min-width: 220px; flex-shrink: 0; }
+    /* Sidebar widgets — horizontal scroll row */
+    .lfciath-news-sidebar-widgets { flex-direction: row; overflow-x: auto; gap: 10px; -webkit-overflow-scrolling: touch; }
+    /* Promo banner widget: min-width so it shows fully when scrolling */
+    .lfciath-sidebar-widget { min-width: 200px; flex-shrink: 0; }
+    /* Ensure widget header is always visible */
+    .lfciath-sidebar-widget-header { padding: 8px 12px; font-size: 12px; }
+    /* App bar */
     .lfciath-app-bar { flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 0; }
     .lfciath-app-bar-right { gap: 6px; }
     .lfciath-app-bar-stat { font-size: 12px; }
-    .lfciath-tab-bar { gap: 0; }
-    .lfciath-tab { padding: 10px 14px; font-size: 13px; }
+    /* Section headings */
+    .lfciath-section-header h2 { font-size: 18px; }
+    .lfciath-related-title { font-size: 22px; }
+    /* Tab bar — always scrollable on mobile */
+    .lfciath-tab-bar { gap: 0; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .lfciath-tab { padding: 10px 14px; font-size: 13px; white-space: nowrap; flex-shrink: 0; }
+    /* Match section */
     .lfciath-match-section { grid-template-columns: 1fr; }
     .lfciath-match-team span { font-size: 11px; }
     .lfciath-match-score { font-size: 16px; min-width: 45px; }
+    /* News card title scale */
+    .lfciath-card-title { font-size: 16px; }
+    /* Grids */
     .lfciath-news-grid.columns-3, .lfciath-news-grid.columns-4 { grid-template-columns: repeat(2, 1fr); }
     .lfciath-related-grid { grid-template-columns: repeat(2, 1fr); }
     .lfciath-news-gallery-grid { grid-template-columns: repeat(2, 1fr); }
     .lfciath-news-body { font-size: 16px; }
 }
 @media (max-width: 480px) {
+    /* Hero banner on very small screens */
+    .lfciath-news-hero { min-height: 220px; }
+    .lfciath-news-title { font-size: clamp(18px, 7vw, 28px); }
+    .lfciath-news-subtitle { font-size: clamp(13px, 4vw, 16px); }
+    /* Grids — single column */
     .lfciath-news-grid.columns-2, .lfciath-news-grid.columns-3, .lfciath-news-grid.columns-4 { grid-template-columns: 1fr; }
     .lfciath-related-grid { grid-template-columns: 1fr; }
     .lfciath-news-gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
     .lfciath-news-filter { gap: 6px; }
     .lfciath-filter-btn { padding: 6px 14px; font-size: 13px; }
     .lfciath-share-btn { width: 36px; height: 36px; }
-    /* Match row — mobile compact */
+    /* Match row — compact on small phones */
     .lfciath-match-row { padding: 10px 10px; gap: 6px; flex-wrap: wrap; }
     .lfciath-match-date { min-width: 34px; font-size: 10px; }
     .lfciath-match-date small { font-size: 9px; }
     .lfciath-match-team img { width: 18px; height: 18px; }
-    .lfciath-match-team span { font-size: 10px; max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .lfciath-match-vs { min-width: 24px; font-size: 11px; }
+    /* Team name: ellipsis on overflow, max-width 55px per spec */
+    .lfciath-match-team span { font-size: 10px; max-width: 55px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lfciath-match-vs { min-width: 24px; font-size: 10px; }
     .lfciath-match-score { font-size: 14px; min-width: 34px; }
-    .lfciath-match-meta-info { width: 100%; text-align: left; padding-left: 40px; font-size: 10px; }
+    /* Meta info (age+venue) wraps below on its own line */
+    .lfciath-match-meta-info { width: 100%; text-align: left; padding-left: 40px; font-size: 10px; order: 99; }
+    /* News card title */
+    .lfciath-card-title { font-size: 15px; }
     /* Tab bar scroll on mobile */
     .lfciath-tab-bar { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
     .lfciath-tab { white-space: nowrap; flex-shrink: 0; }
+    /* Section headings */
+    .lfciath-section-header h2 { font-size: 16px; }
+    .lfciath-related-title { font-size: 18px; }
+}
+@media (max-width: 375px) {
+    /* Extra-small phones (iPhone SE etc.) */
+    .lfciath-news-hero { min-height: 180px; }
+    .lfciath-news-title { font-size: clamp(16px, 8vw, 24px); }
+    .lfciath-news-body { font-size: 15px; line-height: 1.8; }
+    .lfciath-card-title { font-size: 14px; }
+    .lfciath-card-content { padding: 14px; }
+    .lfciath-match-team span { max-width: 44px; font-size: 9px; }
+    .lfciath-match-vs { font-size: 9px; }
 }
 ';
 }
