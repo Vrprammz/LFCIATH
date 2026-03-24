@@ -5,7 +5,7 @@
  * วิธีใช้: คัดลอกโค้ดนี้ไปวางใน Code Snippets plugin
  * ชื่อ Snippet: "LFCIATH - Related News & Helpers"
  * ============================================================
- * @version  V.10
+ * @version  V.11
  * @updated  2026-03-24
  */
 
