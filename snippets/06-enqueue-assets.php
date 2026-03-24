@@ -486,12 +486,17 @@ function lfciath_get_news_css() {
 .lfciath-news-featured { margin-bottom: 0; }
 
 /* Sidebar Widgets (3 stacked) */
-.lfciath-news-sidebar-widgets { display: flex; flex-direction: column; gap: 10px; }
+.lfciath-news-sidebar-widgets { display: flex; flex-direction: column; gap: 10px; height: 100%; }
 .lfciath-sidebar-widget { background: var(--lfc-white); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e5e7eb; overflow: hidden; }
+/* Banner widget — ขยายเต็มความสูงที่เหลือ */
+.lfciath-sidebar-widget:has(.lfciath-widget-banner-body) { flex: 1; display: flex; flex-direction: column; }
 .lfciath-sidebar-widget-header { padding: 10px 14px; font-family: var(--lfc-font-thai); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: #fff; }
 .lfciath-sidebar-widget-header svg { flex-shrink: 0; }
 .lfciath-sidebar-widget-body { padding: 12px; }
-.lfciath-widget-banner-body { padding: 8px; }
+.lfciath-widget-banner-body { padding: 8px; flex: 1; display: flex; flex-direction: column; }
+.lfciath-widget-banner-body .lfciath-banner-item { flex: 1; display: flex; flex-direction: column; }
+.lfciath-widget-banner-body .lfciath-banner-link { flex: 1; display: flex; }
+.lfciath-widget-banner-body .lfciath-banner-item img { flex: 1; width: 100%; object-fit: cover; max-height: none; height: 100%; }
 
 /* Widget: Next Match */
 .lfciath-widget-match { text-align: center; }
@@ -536,7 +541,7 @@ function lfciath_get_news_css() {
 .lfciath-section-header h2::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 4px; background: var(--lfc-red); border-radius: 2px; }
 
 /* NEWS ARCHIVE - Match Results + Fixtures */
-.lfciath-match-section { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+.lfciath-match-section { display: grid; grid-template-columns: 1fr; gap: 16px; margin-bottom: 28px; }
 .lfciath-match-panel { background: var(--lfc-white); border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid #e5e7eb; overflow: hidden; }
 .lfciath-match-panel-header { background: #2d2d2d; color: #fff; padding: 14px 20px; font-family: var(--lfc-font-thai); font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
 .lfciath-match-panel-header svg { flex-shrink: 0; }
