@@ -408,7 +408,7 @@ function lfciath_get_news_css() {
 
 /* SINGLE NEWS - Hero Banner */
 .lfciath-single-news { max-width: 100%; margin: 0 auto; }
-.lfciath-news-hero { position: relative; width: 100%; min-height: 540px; background-size: cover; background-position: center; background-repeat: no-repeat; display: flex; align-items: flex-end; }
+.lfciath-news-hero { position: relative; width: 100%; min-height: 540px; background-size: cover; background-position: center center; background-repeat: no-repeat; display: flex; align-items: flex-end; }
 .lfciath-news-hero-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 60px 5% 40px; background: linear-gradient(to top, rgba(200, 16, 46, 0.95) 0%, rgba(200, 16, 46, 0.8) 70%, transparent 100%) !important; }
 .lfciath-news-hero-simple { width: 100%; padding: 80px 5% 50px; }
 .lfciath-news-hero-content { max-width: 1200px; margin: 0 auto; }
@@ -616,6 +616,8 @@ function lfciath_get_news_css() {
     /* Hero banner — scale gracefully, no text crop */
     .lfciath-news-hero { min-height: 280px; }
     .lfciath-news-hero-overlay { padding: 40px 5% 30px; }
+    /* Archive leaderboard banner — cap height on tablet */
+    .lfciath-archive-banner-wrap img { max-height: 60px; }
     /* Hero typography — fluid clamp handles scaling; reinforce floor at tablet */
     .lfciath-news-title { font-size: clamp(22px, 6vw, 40px); }
     .lfciath-news-subtitle { font-size: clamp(14px, 3.5vw, 18px); }
@@ -656,7 +658,7 @@ function lfciath_get_news_css() {
 }
 @media (max-width: 480px) {
     /* Hero banner on very small screens */
-    .lfciath-news-hero { min-height: 220px; }
+    .lfciath-news-hero { min-height: 200px; }
     .lfciath-news-title { font-size: clamp(22px, 7vw, 32px); }
     .lfciath-news-subtitle { font-size: clamp(14px, 4vw, 16px); }
     /* Grids — single column */

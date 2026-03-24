@@ -403,10 +403,10 @@ function lfciath_build_news_archive( $atts ) {
             <?php if ( $ab_image_url ) : ?>
                 <?php if ( $ab_link_url ) : ?>
                     <a href="<?php echo $ab_link_url; ?>" target="<?php echo esc_attr( $ab_target ); ?>" rel="noopener noreferrer" title="<?php echo $ab_title; ?>" style="display:block;line-height:0;">
-                        <img src="<?php echo esc_url( $ab_image_url ); ?>" alt="<?php echo $ab_title; ?>" style="width:100%;height:auto;display:block;" loading="lazy" />
+                        <img src="<?php echo esc_url( $ab_image_url ); ?>" alt="<?php echo $ab_title; ?>" style="width:100%;height:auto;max-height:90px;object-fit:cover;display:block;" loading="lazy" />
                     </a>
                 <?php else : ?>
-                    <img src="<?php echo esc_url( $ab_image_url ); ?>" alt="<?php echo $ab_title; ?>" style="width:100%;height:auto;display:block;" loading="lazy" />
+                    <img src="<?php echo esc_url( $ab_image_url ); ?>" alt="<?php echo $ab_title; ?>" style="width:100%;height:auto;max-height:90px;object-fit:cover;display:block;" loading="lazy" />
                 <?php endif; ?>
             <?php else : ?>
                 <!-- text-only fallback when no image uploaded -->
