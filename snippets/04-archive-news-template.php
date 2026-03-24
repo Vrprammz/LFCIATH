@@ -500,7 +500,7 @@ function lfciath_build_news_archive( $atts ) {
                     <div class="lfciath-match-row lfciath-match-upcoming">
                         <div class="lfciath-match-date">
                             <?php echo esc_html( wp_date( 'd/m', strtotime( $f['match_date'] ?? '' ) ) ); ?>
-                            <small><?php echo esc_html( $f['match_time'] ?? '' ); ?></small>
+                            <small class="lfciath-match-time-desk"><?php echo esc_html( $f['match_time'] ?? '' ); ?></small>
                         </div>
                         <div class="lfciath-match-teams">
                             <div class="lfciath-match-team home">
@@ -513,6 +513,7 @@ function lfciath_build_news_archive( $atts ) {
                                 <?php if ( $opp_logo ) : ?><img src="<?php echo esc_url( $opp_logo ); ?>" alt="" /><?php endif; ?>
                             </div>
                         </div>
+                        <span class="lfciath-match-time-mob"><?php echo esc_html( $f['match_time'] ?? '' ); ?></span>
                         <div class="lfciath-match-meta-info">
                             <small><?php echo esc_html( $f['age_group'] ?? '' ); ?></small>
                             <?php if ( ! empty( $f['venue'] ) ) : ?><small><?php echo esc_html( $f['venue'] ); ?></small><?php endif; ?>

@@ -575,6 +575,9 @@ function lfciath_get_news_css() {
 .lfciath-match-upcoming { border-left: 3px solid var(--lfc-red); }
 .lfciath-match-meta-info { font-size: 11px; color: #888888; min-width: 50px; text-align: center; font-family: var(--lfc-font-thai); line-height: 1.4; }
 .lfciath-match-meta-info small { display: block; }
+/* desktop: mob-time hidden, desk-time visible */
+.lfciath-match-time-mob { display: none; }
+.lfciath-match-time-desk { display: block; }
 
 /* NEWS ARCHIVE - Card Grid */
 .lfciath-news-grid { display: grid; gap: 20px; margin-bottom: 40px; }
@@ -681,6 +684,9 @@ function lfciath_get_news_css() {
     .lfciath-match-team span { font-size: 10px; max-width: 55px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lfciath-match-vs { min-width: 24px; font-size: 10px; }
     .lfciath-match-score { font-size: 14px; min-width: 34px; }
+    /* Swap time: hide desk-time, show mob-time on right */
+    .lfciath-match-time-desk { display: none; }
+    .lfciath-match-time-mob { display: flex; align-items: center; font-size: 11px; font-weight: 600; color: #555; font-family: var(--lfc-font-thai); white-space: nowrap; margin-left: auto; }
     /* Meta info (age+venue) — full-width centered row below teams */
     .lfciath-match-meta-info { width: 100%; text-align: center; padding: 4px 8px 0; font-size: 10px; order: 99; border-top: 1px dashed #eeeeee; margin-top: 2px; }
     /* Featured card — hide excerpt, shrink title on small phones */
