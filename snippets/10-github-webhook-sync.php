@@ -25,7 +25,7 @@
  * 4. Secret: ค่าเดียวกับ LFCIATH_GH_SECRET
  * 5. Events: Just the push event
  * ============================================================
- * @version  V.11
+ * @version  V.11.1
  * @updated  2026-03-24
  */
 
@@ -304,13 +304,13 @@ function lfciath_sync_snippet_from_github( $file_path, $snippet_name, $commit_sh
         return 'snippet_not_found';
     }
 
-    $ok = $wpdb->update(
-        $table,
-        array( 'code' => $code, 'modified' => current_time( 'mysql' ) ),
-        array( 'id' => intval( $snippet_id ) ),
-        array( '%s', '%s' ),
-        array( '%d' )
-    );
+    // Force write แม้ content เหมือนเดิม — อัปเดต modified เสมอ
+    $ok = $wpdb->query( $wpdb->prepare(
+        "UPDATE `{$table}` SET code = %s, modified = %s WHERE id = %d",
+        $code,
+        current_time( 'mysql' ),
+        intval( $snippet_id )
+    ) );
 
     if ( false === $ok ) {
         lfciath_webhook_log( "DB update failed: ID={$snippet_id}" );
