@@ -1,0 +1,422 @@
+/**
+ * ============================================================
+ * SNIPPET 10: GitHub → WordPress Webhook Sync
+ * ============================================================
+ * วิธีใช้: คัดลอกโค้ดนี้ไปวางใน Code Snippets plugin
+ * ชื่อ Snippet: "LFCIATH - GitHub Webhook Sync"
+ * ============================================================
+ * รับ Push Event จาก GitHub → ดึงไฟล์ใหม่ → อัปเดต Code Snippets
+ * Endpoint: POST /wp-json/lfciath/v1/github-webhook
+ * ============================================================
+ *
+ * ตั้งค่าที่ wp-config.php (เพิ่มก่อน "That's all, stop editing!"):
+ * ─────────────────────────────────────────────────────────────
+ * define( 'LFCIATH_GH_SECRET', 'your-webhook-secret-here' );
+ * define( 'LFCIATH_GH_TOKEN',  'ghp_xxxxxxxxxxxxxxxxxxxx' );
+ * define( 'LFCIATH_GH_OWNER',  'Vrprammz' );
+ * define( 'LFCIATH_GH_REPO',   'LFCIATH' );
+ * define( 'LFCIATH_GH_BRANCH', 'main' );
+ * ─────────────────────────────────────────────────────────────
+ *
+ * ตั้งค่า GitHub Webhook:
+ * 1. ไปที่ repo > Settings > Webhooks > Add webhook
+ * 2. Payload URL: https://www.lfcacademyth.com/wp-json/lfciath/v1/github-webhook
+ * 3. Content type: application/json
+ * 4. Secret: ค่าเดียวกับ LFCIATH_GH_SECRET
+ * 5. Events: Just the push event
+ * ============================================================
+ */
+
+// ============================================================
+// 1. Mapping: GitHub file path → ชื่อ Snippet (ต้องตรงกันใน DB)
+// ============================================================
+function lfciath_github_snippet_map() {
+    return array(
+        'snippets/01-register-news-cpt.php'     => '1 - LFCIATH - Register News CPT',
+        'snippets/02-acf-news-fields.php'        => '2 - LFCIATH - ACF News Fields',
+        'snippets/03-single-news-template.php'   => '3 - LFCIATH - Single News Template',
+        'snippets/04-archive-news-template.php'  => '4 - LFCIATH - News Archive Template',
+        'snippets/05-related-news-functions.php' => '5 - LFCIATH - Related News & Helpers',
+        'snippets/06-enqueue-assets.php'         => '6 - LFCIATH - Enqueue News Assets',
+        'snippets/07-admin-columns.php'          => '7 - LFCIATH - News Admin Enhancements',
+        'snippets/08-news-dashboard.php'         => '8 - LFCIATH - News Dashboard',
+        'snippets/08a-news-dashboard.php'        => '8A - LFCIATH Command Center — Core + Layout + Dashboard',
+        'snippets/08b-news-dashboard.php'        => '8B - Command Center — จัดการข่าว (CRUD)',
+        'snippets/08c-news-dashboard.php'        => '8C - Command Center — ผลแข่งขัน + แบนเนอร์',
+        'snippets/09-activity-schedule.php'      => '9 - Activity Schedule — ตารางกิจกรรม',
+        // snippet 10 ตั้งชื่อตามที่กรอกตอน Add ใน Code Snippets admin
+        'snippets/10-github-webhook-sync.php'    => '10 - LFCIATH - GitHub Webhook Sync',
+    );
+}
+
+// ============================================================
+// 2. Register REST API Endpoint
+// ============================================================
+function lfciath_register_webhook_endpoint() {
+    register_rest_route( 'lfciath/v1', '/github-webhook', array(
+        'methods'             => 'POST',
+        'callback'            => 'lfciath_handle_github_webhook',
+        'permission_callback' => '__return_true', // ตรวจสอบ signature ใน callback แทน
+    ) );
+}
+add_action( 'rest_api_init', 'lfciath_register_webhook_endpoint' );
+
+// ============================================================
+// 3. Webhook Handler
+// ============================================================
+function lfciath_handle_github_webhook( WP_REST_Request $request ) {
+
+    // --- 3a. ตรวจสอบ config ---
+    if ( ! defined( 'LFCIATH_GH_SECRET' ) || ! defined( 'LFCIATH_GH_TOKEN' ) ||
+         ! defined( 'LFCIATH_GH_OWNER' )  || ! defined( 'LFCIATH_GH_REPO' ) ) {
+        lfciath_webhook_log( 'ERROR: Missing required constants in wp-config.php' );
+        return new WP_REST_Response( array( 'error' => 'server_misconfigured' ), 500 );
+    }
+
+    // --- 3b. ตรวจสอบ GitHub Signature (HMAC SHA-256) ---
+    $signature_header = $request->get_header( 'X-Hub-Signature-256' );
+    $raw_body         = $request->get_body();
+
+    if ( ! $signature_header ) {
+        lfciath_webhook_log( 'ERROR: Missing X-Hub-Signature-256 header' );
+        return new WP_REST_Response( array( 'error' => 'missing_signature' ), 401 );
+    }
+
+    $expected = 'sha256=' . hash_hmac( 'sha256', $raw_body, LFCIATH_GH_SECRET );
+    if ( ! hash_equals( $expected, $signature_header ) ) {
+        lfciath_webhook_log( 'ERROR: Signature mismatch' );
+        return new WP_REST_Response( array( 'error' => 'invalid_signature' ), 401 );
+    }
+
+    // --- 3c. รับเฉพาะ push event ---
+    $event = $request->get_header( 'X-GitHub-Event' );
+    if ( 'push' !== $event ) {
+        return new WP_REST_Response( array( 'status' => 'ignored', 'event' => $event ), 200 );
+    }
+
+    // --- 3d. Parse payload ---
+    $payload = $request->get_json_params();
+    if ( empty( $payload ) ) {
+        lfciath_webhook_log( 'ERROR: Empty or invalid JSON payload' );
+        return new WP_REST_Response( array( 'error' => 'invalid_payload' ), 400 );
+    }
+
+    // เช็ค branch ที่ตั้งค่าไว้
+    $branch       = defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : 'main';
+    $pushed_ref   = $payload['ref'] ?? '';
+    $pushed_branch = str_replace( 'refs/heads/', '', $pushed_ref );
+
+    if ( $pushed_branch !== $branch ) {
+        return new WP_REST_Response( array(
+            'status'  => 'ignored',
+            'reason'  => 'branch_mismatch',
+            'pushed'  => $pushed_branch,
+            'watched' => $branch,
+        ), 200 );
+    }
+
+    // --- 3e. รวบรวมไฟล์ที่เปลี่ยนแปลงจากทุก commit ---
+    $changed_files = array();
+    $commits = $payload['commits'] ?? array();
+    foreach ( $commits as $commit ) {
+        foreach ( array( 'added', 'modified' ) as $change_type ) {
+            if ( ! empty( $commit[ $change_type ] ) ) {
+                foreach ( $commit[ $change_type ] as $file ) {
+                    $changed_files[ $file ] = true;
+                }
+            }
+        }
+    }
+
+    if ( empty( $changed_files ) ) {
+        return new WP_REST_Response( array( 'status' => 'no_files_changed' ), 200 );
+    }
+
+    // --- 3f. Sync ไฟล์ที่อยู่ใน map ---
+    $snippet_map = lfciath_github_snippet_map();
+    $results     = array();
+
+    foreach ( $changed_files as $file => $_ ) {
+        if ( ! isset( $snippet_map[ $file ] ) ) {
+            continue; // ไม่ใช่ไฟล์ snippet — ข้าม
+        }
+
+        $snippet_name = $snippet_map[ $file ];
+        $result       = lfciath_sync_snippet_from_github( $file, $snippet_name );
+        $results[]    = array( 'file' => $file, 'snippet' => $snippet_name, 'status' => $result );
+        lfciath_webhook_log( sprintf( '[%s] %s → %s', $result, $file, $snippet_name ) );
+    }
+
+    return new WP_REST_Response( array(
+        'status'  => 'ok',
+        'synced'  => count( array_filter( $results, fn( $r ) => $r['status'] === 'updated' ) ),
+        'results' => $results,
+    ), 200 );
+}
+
+// ============================================================
+// 4. ดึงไฟล์จาก GitHub และอัปเดต Snippet ใน DB
+// ============================================================
+function lfciath_sync_snippet_from_github( $file_path, $snippet_name ) {
+    global $wpdb;
+
+    $owner  = LFCIATH_GH_OWNER;
+    $repo   = LFCIATH_GH_REPO;
+    $branch = defined( 'LFCIATH_GH_BRANCH' ) ? LFCIATH_GH_BRANCH : 'main';
+    $token  = LFCIATH_GH_TOKEN;
+
+    // GitHub Contents API
+    $api_url = sprintf(
+        'https://api.github.com/repos/%s/%s/contents/%s?ref=%s',
+        rawurlencode( $owner ),
+        rawurlencode( $repo ),
+        $file_path,
+        rawurlencode( $branch )
+    );
+
+    $response = wp_remote_get( $api_url, array(
+        'timeout' => 15,
+        'headers' => array(
+            'Authorization' => 'Bearer ' . $token,
+            'Accept'        => 'application/vnd.github.v3+json',
+            'User-Agent'    => 'LFCIATH-Webhook/1.0',
+        ),
+    ) );
+
+    if ( is_wp_error( $response ) ) {
+        lfciath_webhook_log( 'GitHub API error: ' . $response->get_error_message() );
+        return 'api_error';
+    }
+
+    $http_code = wp_remote_retrieve_response_code( $response );
+    if ( 200 !== $http_code ) {
+        lfciath_webhook_log( "GitHub API returned HTTP {$http_code} for {$file_path}" );
+        return 'api_error';
+    }
+
+    $body = json_decode( wp_remote_retrieve_body( $response ), true );
+    if ( empty( $body['content'] ) ) {
+        return 'empty_content';
+    }
+
+    // Decode base64 content จาก GitHub API
+    $code = base64_decode( str_replace( "\n", '', $body['content'] ) );
+    if ( false === $code || '' === $code ) {
+        return 'decode_error';
+    }
+
+    // Strip opening <?php tag ถ้ามี (Code Snippets plugin เพิ่มให้เอง)
+    $code = preg_replace( '/^\s*<\?php\s*/i', '', $code );
+
+    // หา snippet ใน DB โดยชื่อ
+    $table = $wpdb->prefix . 'snippets';
+
+    // ตรวจสอบว่าตารางมีอยู่จริง
+    if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+        lfciath_webhook_log( "Table {$table} not found — Code Snippets plugin installed?" );
+        return 'table_not_found';
+    }
+
+    $snippet_id = $wpdb->get_var( $wpdb->prepare(
+        "SELECT id FROM `{$table}` WHERE name = %s LIMIT 1",
+        $snippet_name
+    ) );
+
+    if ( ! $snippet_id ) {
+        lfciath_webhook_log( "Snippet not found in DB: {$snippet_name}" );
+        return 'snippet_not_found';
+    }
+
+    $updated = $wpdb->update(
+        $table,
+        array(
+            'code'     => $code,
+            'modified' => current_time( 'mysql' ),
+        ),
+        array( 'id' => intval( $snippet_id ) ),
+        array( '%s', '%s' ),
+        array( '%d' )
+    );
+
+    if ( false === $updated ) {
+        lfciath_webhook_log( "DB update failed for snippet ID {$snippet_id}" );
+        return 'db_error';
+    }
+
+    // ล้าง opcode cache ถ้ามี
+    if ( function_exists( 'opcache_invalidate' ) ) {
+        opcache_reset();
+    }
+
+    return 'updated';
+}
+
+// ============================================================
+// 5. Admin Settings Page (ตั้งค่า + ดู Log)
+// ============================================================
+function lfciath_webhook_admin_menu() {
+    add_submenu_page(
+        'edit.php?post_type=lfciath_news',
+        'GitHub Webhook Sync',
+        'GitHub Sync',
+        'manage_options',
+        'lfciath-github-sync',
+        'lfciath_webhook_settings_page'
+    );
+}
+add_action( 'admin_menu', 'lfciath_webhook_admin_menu' );
+
+function lfciath_webhook_settings_page() {
+    $endpoint_url  = rest_url( 'lfciath/v1/github-webhook' );
+    $has_secret    = defined( 'LFCIATH_GH_SECRET' ) && LFCIATH_GH_SECRET !== '';
+    $has_token     = defined( 'LFCIATH_GH_TOKEN' )  && LFCIATH_GH_TOKEN  !== '';
+    $has_owner     = defined( 'LFCIATH_GH_OWNER' )  && LFCIATH_GH_OWNER  !== '';
+    $has_repo      = defined( 'LFCIATH_GH_REPO' )   && LFCIATH_GH_REPO   !== '';
+    $all_ok        = $has_secret && $has_token && $has_owner && $has_repo;
+
+    $logs = get_option( 'lfciath_webhook_logs', array() );
+    ?>
+    <div class="wrap">
+        <h1 style="display:flex;align-items:center;gap:10px;">
+            <span>🔗 GitHub Webhook Sync</span>
+            <span style="font-size:13px;font-weight:400;color:#888;">LFCIATH - GitHub Sync</span>
+        </h1>
+
+        <!-- Status Card -->
+        <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:20px;margin:20px 0;max-width:800px;">
+            <h3 style="margin:0 0 16px;">สถานะการตั้งค่า</h3>
+            <table style="width:100%;border-collapse:collapse;">
+                <?php
+                $checks = array(
+                    'LFCIATH_GH_SECRET' => array( 'label' => 'Webhook Secret',          'ok' => $has_secret ),
+                    'LFCIATH_GH_TOKEN'  => array( 'label' => 'GitHub Personal Access Token', 'ok' => $has_token ),
+                    'LFCIATH_GH_OWNER'  => array( 'label' => 'GitHub Owner / Username', 'ok' => $has_owner ),
+                    'LFCIATH_GH_REPO'   => array( 'label' => 'GitHub Repository Name',  'ok' => $has_repo ),
+                );
+                foreach ( $checks as $const => $info ) :
+                    $val = $info['ok'] ? ( $const === 'LFCIATH_GH_TOKEN' ? '••••••••' : constant( $const ) ) : '—';
+                ?>
+                <tr style="border-bottom:1px solid #f0f0f0;">
+                    <td style="padding:8px 12px;width:40%;font-weight:600;font-size:13px;">
+                        <?php echo esc_html( $info['label'] ); ?>
+                        <code style="font-size:11px;color:#888;display:block;"><?php echo esc_html( $const ); ?></code>
+                    </td>
+                    <td style="padding:8px 12px;">
+                        <?php if ( $info['ok'] ) : ?>
+                            <span style="color:#2E7D32;font-weight:600;">✓ ตั้งค่าแล้ว</span>
+                            <?php if ( $const !== 'LFCIATH_GH_TOKEN' && $const !== 'LFCIATH_GH_SECRET' ) : ?>
+                                <code style="margin-left:8px;color:#555;"><?php echo esc_html( $val ); ?></code>
+                            <?php endif; ?>
+                        <?php else : ?>
+                            <span style="color:#B71C1C;font-weight:600;">✗ ยังไม่ได้ตั้งค่า</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </table>
+        </div>
+
+        <?php if ( $all_ok ) : ?>
+        <!-- Endpoint URL -->
+        <div style="background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:16px 20px;margin-bottom:20px;max-width:800px;">
+            <strong style="color:#1B5E20;">✓ Webhook พร้อมใช้งาน</strong>
+            <p style="margin:8px 0 4px;color:#333;font-size:13px;">ตั้งค่า Payload URL ใน GitHub ดังนี้:</p>
+            <code style="display:block;padding:10px;background:#fff;border-radius:4px;font-size:13px;word-break:break-all;border:1px solid #c8e6c9;">
+                <?php echo esc_html( $endpoint_url ); ?>
+            </code>
+        </div>
+        <?php else : ?>
+        <!-- Setup instructions -->
+        <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:16px 20px;margin-bottom:20px;max-width:800px;">
+            <strong style="color:#F57F17;">⚠ ยังตั้งค่าไม่ครบ</strong>
+            <p style="margin:8px 0 4px;color:#555;font-size:13px;">เพิ่มค่าต่อไปนี้ใน <code>wp-config.php</code> (ก่อนบรรทัด "That's all, stop editing!"):</p>
+            <pre style="background:#1e1e1e;color:#d4d4d4;padding:14px;border-radius:6px;font-size:12px;overflow-x:auto;line-height:1.7;margin:8px 0 0;">define( 'LFCIATH_GH_SECRET', '<span style="color:#ce9178;">your-webhook-secret</span>' );
+define( 'LFCIATH_GH_TOKEN',  '<span style="color:#ce9178;">ghp_xxxxxxxxxxxxxxxxxxxx</span>' );
+define( 'LFCIATH_GH_OWNER',  '<span style="color:#ce9178;">your-github-username</span>' );
+define( 'LFCIATH_GH_REPO',   '<span style="color:#ce9178;">LFCIATH-1</span>' );
+define( 'LFCIATH_GH_BRANCH', '<span style="color:#ce9178;">main</span>' );</pre>
+        </div>
+        <?php endif; ?>
+
+        <!-- Snippet Map -->
+        <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:20px;margin-bottom:20px;max-width:800px;">
+            <h3 style="margin:0 0 12px;">Snippet Mapping</h3>
+            <p style="color:#888;font-size:13px;margin:0 0 12px;">ไฟล์ใน GitHub → ชื่อ Snippet ใน WordPress (ต้องตรงกันทุกตัวอักษร)</p>
+            <table class="wp-list-table widefat fixed striped" style="font-size:13px;">
+                <thead><tr>
+                    <th style="width:55%;">GitHub File Path</th>
+                    <th>Code Snippets Name</th>
+                </tr></thead>
+                <tbody>
+                    <?php foreach ( lfciath_github_snippet_map() as $path => $name ) : ?>
+                    <tr>
+                        <td><code style="font-size:12px;"><?php echo esc_html( $path ); ?></code></td>
+                        <td><?php echo esc_html( $name ); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Sync Log -->
+        <div style="background:#fff;border:1px solid #e5e5e5;border-radius:8px;padding:20px;max-width:800px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <h3 style="margin:0;">Sync Log (ล่าสุด <?php echo count( $logs ); ?> รายการ)</h3>
+                <?php
+                $clear_url = wp_nonce_url(
+                    admin_url( 'admin-post.php?action=lfciath_clear_webhook_logs' ),
+                    'lfciath_clear_logs'
+                );
+                ?>
+                <a href="<?php echo esc_url( $clear_url ); ?>"
+                   class="button button-small"
+                   onclick="return confirm('ล้าง log ทั้งหมด?')">ล้าง Log</a>
+            </div>
+            <?php if ( ! empty( $logs ) ) : ?>
+            <div style="background:#1e1e1e;border-radius:6px;padding:14px;max-height:300px;overflow-y:auto;">
+                <?php foreach ( array_reverse( $logs ) as $entry ) : ?>
+                <div style="font-family:monospace;font-size:12px;color:#d4d4d4;line-height:1.7;border-bottom:1px solid #333;padding:2px 0;">
+                    <span style="color:#888;"><?php echo esc_html( $entry['time'] ?? '' ); ?></span>
+                    <span style="margin-left:8px;"><?php echo esc_html( $entry['message'] ?? '' ); ?></span>
+                </div>
+                <?php endforeach; ?>
+            </div>
+            <?php else : ?>
+            <p style="color:#999;text-align:center;padding:20px 0;margin:0;">ยังไม่มี log</p>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php
+}
+
+// ============================================================
+// 6. Clear Log Handler
+// ============================================================
+function lfciath_clear_webhook_logs_handler() {
+    if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'lfciath_clear_logs' ) ) {
+        wp_die( 'ไม่ถูกต้อง' );
+    }
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( 'ไม่มีสิทธิ์' );
+    }
+    delete_option( 'lfciath_webhook_logs' );
+    wp_redirect( admin_url( 'edit.php?post_type=lfciath_news&page=lfciath-github-sync&cleared=1' ) );
+    exit;
+}
+add_action( 'admin_post_lfciath_clear_webhook_logs', 'lfciath_clear_webhook_logs_handler' );
+
+// ============================================================
+// 7. Logger (เก็บใน wp_options, max 50 entries)
+// ============================================================
+function lfciath_webhook_log( $message ) {
+    $logs   = get_option( 'lfciath_webhook_logs', array() );
+    $logs[] = array(
+        'time'    => wp_date( 'Y-m-d H:i:s' ),
+        'message' => $message,
+    );
+    // เก็บแค่ 50 รายการล่าสุด
+    if ( count( $logs ) > 50 ) {
+        $logs = array_slice( $logs, -50 );
+    }
+    update_option( 'lfciath_webhook_logs', $logs, false );
+}

@@ -1,4 +1,3 @@
-<?php
 /**
  * ============================================================
  * SNIPPET 1: Register Custom Post Type "News" + Taxonomy

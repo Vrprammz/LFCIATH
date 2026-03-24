@@ -18,7 +18,9 @@ LFCIATH/
 │   ├── 04-archive-news-template.php       # News archive/listing page template
 │   ├── 05-related-news-functions.php      # Related news + shortcodes
 │   ├── 06-enqueue-assets.php              # CSS/JS loading + Breadcrumb + Lightbox
-│   └── 07-admin-columns.php               # Admin UI enhancements + Dashboard widget
+│   ├── 07-admin-columns.php               # Admin UI enhancements + Dashboard widget
+│   ├── 08-news-dashboard.php              # Custom admin form for creating/editing news
+│   └── 09-activity-schedule.php          # Activity Schedule — ตารางกิจกรรม (CPT + admin CRUD + shortcode)
 ├── assets/
 │   └── css/
 │       └── lfciath-news.css               # Main stylesheet (LFC IA branding)
@@ -51,12 +53,14 @@ LFCIATH/
 5. **Snippet 05** (`05-related-news-functions.php`): สร้าง snippet "LFCIATH - Related News & Helpers" > Activate
 6. **Snippet 06** (`06-enqueue-assets.php`): สร้าง snippet "LFCIATH - Enqueue News Assets" > Activate
 7. **Snippet 07** (`07-admin-columns.php`): สร้าง snippet "LFCIATH - News Admin Enhancements" > Activate
-8. **CSS** (`assets/css/lfciath-news.css`): คัดลอกเนื้อหาไปวาง Customizer > Additional CSS หรือ Elementor > Site Settings > Custom CSS
-9. **Flush Permalinks**: ไปที่ Settings > Permalinks > กด Save Changes (ไม่ต้องเปลี่ยนอะไร)
+8. **Snippet 08** (`08-news-dashboard.php`): สร้าง snippet "LFCIATH - News Dashboard" > Activate
+9. **Snippet 09** (`09-activity-schedule.php`): สร้าง snippet "LFCIATH - Activity Schedule" > Activate
+10. **CSS** (`assets/css/lfciath-news.css`): คัดลอกเนื้อหาไปวาง Customizer > Additional CSS หรือ Elementor > Site Settings > Custom CSS
+11. **Flush Permalinks**: ไปที่ Settings > Permalinks > กด Save Changes (ไม่ต้องเปลี่ยนอะไร)
 
 ## Snippet Order (ลำดับโหลด)
 
-Snippets ต้องทำงานทั้งหมดพร้อมกัน ลำดับไม่สำคัญเพราะใช้ WordPress hooks แต่แนะนำให้ activate ตามลำดับ 01-07
+Snippets ต้องทำงานทั้งหมดพร้อมกัน ลำดับไม่สำคัญเพราะใช้ WordPress hooks แต่แนะนำให้ activate ตามลำดับ 01-09
 
 ## Custom Post Type
 
