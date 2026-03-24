@@ -1088,8 +1088,9 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
     $v_type        = $post_id  ? get_post_meta( $post_id, 'activity_type',        true )  : 'training';
     $v_age_group   = $post_id  ? get_post_meta( $post_id, 'activity_age_group',   true )  : '';
     $v_location    = $post_id  ? get_post_meta( $post_id, 'activity_location',    true )  : '';
-    $v_description = $post_id  ? get_post_meta( $post_id, 'activity_description', true )  : '';
-    $v_status      = $post_id  ? get_post_meta( $post_id, 'activity_status',      true )  : 'upcoming';
+    $v_description    = $post_id  ? get_post_meta( $post_id, 'activity_description',  true )  : '';
+    $v_register_url   = $post_id  ? get_post_meta( $post_id, 'activity_register_url', true )  : '';
+    $v_status         = $post_id  ? get_post_meta( $post_id, 'activity_status',       true )  : 'upcoming';
 
     if ( '' === $v_status ) {
         $v_status = 'upcoming';
@@ -1194,8 +1195,11 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
             <!-- รายละเอียด -->
             <div class="lfciath-cc-card">
                 <div class="lfciath-cc-card-header"><span class="dashicons dashicons-editor-alignleft"></span> รายละเอียด</div>
-                <label class="lfciath-cc-label">คำอธิบายกิจกรรม (ไม่บังคับ)</label>
-                <textarea name="activity_description" class="lfciath-cc-input" rows="4" placeholder="รายละเอียดเพิ่มเติม..."><?php echo esc_textarea( $v_description ); ?></textarea>
+                <label class="lfciath-cc-label">คำอธิบายกิจกรรม <small style="font-weight:400;color:#aaa;">(ไม่บังคับ — แนะนำไม่เกิน 2-3 บรรทัด)</small></label>
+                <textarea name="activity_description" class="lfciath-cc-input" rows="3" placeholder="รายละเอียดเพิ่มเติม..."><?php echo esc_textarea( $v_description ); ?></textarea>
+
+                <label class="lfciath-cc-label" style="margin-top:12px;">ลิ้งค์สมัคร <small style="font-weight:400;color:#aaa;">(Google Form หรือลิ้งค์สมัคร)</small></label>
+                <input type="url" name="activity_register_url" value="<?php echo esc_attr( $v_register_url ); ?>" class="lfciath-cc-input" placeholder="https://forms.gle/..." />
             </div>
 
             <button type="submit" class="lfciath-cc-btn lfciath-cc-btn-primary lfciath-cc-btn-block">
@@ -1368,7 +1372,8 @@ function lfciath_handle_cc_save_activity() {
     $location    = isset( $_POST['activity_location'] )    ? sanitize_text_field( wp_unslash( $_POST['activity_location'] ) )        : '';
     $description = isset( $_POST['activity_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['activity_description'] ) ) : '';
     $status      = isset( $_POST['activity_status'] )      ? sanitize_text_field( wp_unslash( $_POST['activity_status'] ) )          : 'upcoming';
-    $image_id    = isset( $_POST['activity_image_id'] )    ? intval( $_POST['activity_image_id'] )                                    : 0;
+    $image_id       = isset( $_POST['activity_image_id'] )    ? intval( $_POST['activity_image_id'] )                                       : 0;
+    $register_url   = isset( $_POST['activity_register_url'] ) ? esc_url_raw( wp_unslash( $_POST['activity_register_url'] ) )               : '';
 
     $allowed_types    = array( 'training', 'match', 'event', 'camp', 'other' );
     $allowed_statuses = array( 'upcoming', 'ongoing', 'completed', 'cancelled' );
@@ -1404,8 +1409,9 @@ function lfciath_handle_cc_save_activity() {
         update_post_meta( $post_id, 'activity_type',        $type );
         update_post_meta( $post_id, 'activity_age_group',   $age_group );
         update_post_meta( $post_id, 'activity_location',    $location );
-        update_post_meta( $post_id, 'activity_description', $description );
-        update_post_meta( $post_id, 'activity_status',      $status );
+        update_post_meta( $post_id, 'activity_description',  $description );
+        update_post_meta( $post_id, 'activity_status',       $status );
+        update_post_meta( $post_id, 'activity_register_url', $register_url );
         if ( $image_id > 0 ) {
             update_post_meta( $post_id, 'activity_image_id', $image_id );
         } else {

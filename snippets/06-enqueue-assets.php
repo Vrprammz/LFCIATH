@@ -640,6 +640,18 @@ function lfciath_get_news_css() {
     .lfciath-news-filter { gap: 6px; }
     .lfciath-filter-btn { padding: 6px 14px; font-size: 13px; }
     .lfciath-share-btn { width: 36px; height: 36px; }
+    /* Match row — mobile compact */
+    .lfciath-match-row { padding: 10px 10px; gap: 6px; flex-wrap: wrap; }
+    .lfciath-match-date { min-width: 34px; font-size: 10px; }
+    .lfciath-match-date small { font-size: 9px; }
+    .lfciath-match-team img { width: 18px; height: 18px; }
+    .lfciath-match-team span { font-size: 10px; max-width: 52px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .lfciath-match-vs { min-width: 24px; font-size: 11px; }
+    .lfciath-match-score { font-size: 14px; min-width: 34px; }
+    .lfciath-match-meta-info { width: 100%; text-align: left; padding-left: 40px; font-size: 10px; }
+    /* Tab bar scroll on mobile */
+    .lfciath-tab-bar { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+    .lfciath-tab { white-space: nowrap; flex-shrink: 0; }
 }
 ';
 }

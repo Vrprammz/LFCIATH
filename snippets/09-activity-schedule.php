@@ -246,9 +246,10 @@ function lfciath_activity_list_page() {
     $base_url   = admin_url( 'admin.php?page=lfciath-activities' );
 
     $status_labels = array(
-        'upcoming'  => array( 'label' => 'กำลังจะมา', 'color' => '#1565C0' ),
-        'completed' => array( 'label' => 'เสร็จสิ้น',  'color' => '#2E7D32' ),
-        'cancelled' => array( 'label' => 'ยกเลิก',    'color' => '#B71C1C' ),
+        'upcoming'  => array( 'label' => 'กำลังจะมา',       'color' => '#1565C0' ),
+        'ongoing'   => array( 'label' => 'กำลังดำเนินการ', 'color' => '#E65100' ),
+        'completed' => array( 'label' => 'เสร็จสิ้น',       'color' => '#2E7D32' ),
+        'cancelled' => array( 'label' => 'ยกเลิก',          'color' => '#B71C1C' ),
     );
     ?>
     <div class="wrap">
@@ -579,6 +580,7 @@ function lfciath_activity_form_page() {
                         <label class="lfciath-dash-label" for="activity_status">สถานะ</label>
                         <select name="activity_status" id="activity_status" class="lfciath-dash-input-full">
                             <option value="upcoming"  <?php selected( $v_status, 'upcoming' ); ?>>📅 กำลังจะมา</option>
+                            <option value="ongoing"   <?php selected( $v_status, 'ongoing' ); ?>>🔄 กำลังดำเนินการ</option>
                             <option value="completed" <?php selected( $v_status, 'completed' ); ?>>✅ เสร็จสิ้น</option>
                             <option value="cancelled" <?php selected( $v_status, 'cancelled' ); ?>>❌ ยกเลิก</option>
                         </select>
@@ -944,9 +946,10 @@ function lfciath_build_activity_schedule( $atts ) {
         $act_type    = get_post_meta( $act_id, 'activity_type',         true );
         $act_age     = get_post_meta( $act_id, 'activity_age_group',    true );
         $act_status  = get_post_meta( $act_id, 'activity_status',       true );
-        $act_desc    = get_post_meta( $act_id, 'activity_description',  true );
-        $act_date_end = get_post_meta( $act_id, 'activity_date_end', true );
-        $act_img_id   = (int) get_post_meta( $act_id, 'activity_image_id', true );
+        $act_desc         = get_post_meta( $act_id, 'activity_description',  true );
+        $act_register_url = get_post_meta( $act_id, 'activity_register_url', true );
+        $act_date_end     = get_post_meta( $act_id, 'activity_date_end', true );
+        $act_img_id       = (int) get_post_meta( $act_id, 'activity_image_id', true );
         $act_img_url  = $act_img_id ? wp_get_attachment_image_url( $act_img_id, 'medium' ) : '';
         $type_info    = isset( $types[ $act_type ] ) ? $types[ $act_type ] : $types['other'];
 
@@ -1036,7 +1039,12 @@ function lfciath_build_activity_schedule( $atts ) {
                 <?php endif; ?>
 
                 <?php if ( $act_desc ) : ?>
-                <p class="lfciath-act-card-desc"><?php echo esc_html( $act_desc ); ?></p>
+                <p class="lfciath-act-card-desc"><?php echo esc_html( wp_trim_words( $act_desc, 20, '...' ) ); ?></p>
+                <?php endif; ?>
+                <?php if ( $act_register_url ) : ?>
+                <a href="<?php echo esc_url( $act_register_url ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-act-register-btn">
+                    สมัครเลย →
+                </a>
                 <?php endif; ?>
             </div>
 
@@ -1196,6 +1204,23 @@ function lfciath_activity_enqueue_css() {
     color: #999;
     margin: 6px 0 0;
     line-height: 1.6;
+}
+.lfciath-act-register-btn {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 7px 18px;
+    background: var(--lfc-red, #C8102E);
+    color: #fff !important;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none !important;
+    transition: background 0.2s;
+    font-family: var(--lfc-font-thai, sans-serif);
+}
+.lfciath-act-register-btn:hover {
+    background: var(--lfc-red-dark, #A50D22);
+    color: #fff !important;
 }
 .lfciath-act-card-img {
     margin: 8px 0;
