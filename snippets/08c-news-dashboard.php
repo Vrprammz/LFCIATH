@@ -1266,6 +1266,32 @@ function lfciath_cc_view_list_activities( $base_url ) {
     );
     ?>
 
+    <style>
+    /* ── Activity list table — responsive columns ── */
+    @media (max-width: 767px) {
+        /* Hide เวลา (col 4) and สถานที่ (col 5) */
+        .lfciath-cc-table thead tr th:nth-child(4),
+        .lfciath-cc-table thead tr th:nth-child(5),
+        .lfciath-cc-table tbody tr td:nth-child(4),
+        .lfciath-cc-table tbody tr td:nth-child(5) {
+            display: none;
+        }
+    }
+    @media (max-width: 479px) {
+        /* Also hide ประเภท (col 2) — keep ชื่อ, วันที่, สถานะ, จัดการ */
+        .lfciath-cc-table thead tr th:nth-child(2),
+        .lfciath-cc-table tbody tr td:nth-child(2) {
+            display: none;
+        }
+        /* Tighten action buttons so they don't overflow */
+        .lfciath-cc-table tbody tr td:last-child .lfciath-cc-btn-sm {
+            display: inline-block;
+            padding: 3px 6px;
+            font-size: 11px;
+        }
+    }
+    </style>
+
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
         <a href="<?php echo esc_url( add_query_arg( 'view', 'create-activity', $base_url ) ); ?>" class="lfciath-cc-btn lfciath-cc-btn-primary">+ เพิ่มกิจกรรม</a>
         <span style="color:#888888;font-size:13px;">ทั้งหมด <?php echo esc_html( count( $posts ) ); ?> รายการ</span>
