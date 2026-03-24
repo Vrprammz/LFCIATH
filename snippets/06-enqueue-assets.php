@@ -646,6 +646,10 @@ function lfciath_get_news_css() {
     .lfciath-match-section { grid-template-columns: 1fr; }
     .lfciath-match-team span { font-size: 11px; }
     .lfciath-match-score { font-size: 16px; min-width: 45px; }
+    /* Featured card — smaller font on tablet */
+    .lfciath-featured-overlay { padding: 44px 18px 18px; }
+    .lfciath-featured-title { font-size: clamp(14px, 3.8vw, 18px); -webkit-line-clamp: 2; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+    .lfciath-featured-excerpt { font-size: 12px; -webkit-line-clamp: 1; }
     /* News card title scale */
     .lfciath-card-title { font-size: 16px; }
     /* Grids */
@@ -677,8 +681,12 @@ function lfciath_get_news_css() {
     .lfciath-match-team span { font-size: 10px; max-width: 55px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .lfciath-match-vs { min-width: 24px; font-size: 10px; }
     .lfciath-match-score { font-size: 14px; min-width: 34px; }
-    /* Meta info (age+venue) wraps below on its own line */
-    .lfciath-match-meta-info { width: 100%; text-align: left; padding-left: 40px; font-size: 10px; order: 99; }
+    /* Meta info (age+venue) — full-width centered row below teams */
+    .lfciath-match-meta-info { width: 100%; text-align: center; padding: 4px 8px 0; font-size: 10px; order: 99; border-top: 1px dashed #eeeeee; margin-top: 2px; }
+    /* Featured card — hide excerpt, shrink title on small phones */
+    .lfciath-featured-overlay { padding: 32px 14px 14px; }
+    .lfciath-featured-title { font-size: 14px; }
+    .lfciath-featured-excerpt { display: none; }
     /* News card title */
     .lfciath-card-title { font-size: 15px; }
     /* Tab bar scroll on mobile */
