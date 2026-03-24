@@ -8,7 +8,7 @@
  * ระบบจัดการตารางกิจกรรม: วัน เวลา สถานที่ ชื่อกิจกรรม
  * Shortcode: [lfciath_activity_schedule count="10" show_past="no" type="" view="cards" age_group="" show_filter="no"]
  * ============================================================
- * @version  V.11.1
+ * @version  V.12
  * @updated  2026-03-24
  */
 

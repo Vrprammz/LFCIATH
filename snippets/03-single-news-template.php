@@ -11,7 +11,7 @@
  * ใช้ template_include + render full page พร้อม header/footer
  * เพื่อให้ทำงานได้กับทุก theme รวม Elementor Pro
  * ============================================================
- * @version  V.11
+ * @version  V.12
  * @updated  2026-03-24
  */
 

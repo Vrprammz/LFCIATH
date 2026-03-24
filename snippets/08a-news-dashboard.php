@@ -7,7 +7,7 @@
  * 2. สร้าง WP Page → ใส่ shortcode [lfciath_command_center]
  * 3. เฉพาะ admin/editor เข้าได้ (คนอื่น redirect ไป login)
  * ============================================================
- * @version  V.11.1
+ * @version  V.12
  * @updated  2026-03-24
  */
 

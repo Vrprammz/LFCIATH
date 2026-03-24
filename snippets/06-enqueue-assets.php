@@ -9,7 +9,7 @@
  *   1. ใส่ผ่าน snippet นี้ (โหลดจากไฟล์ CSS ใน theme/child-theme)
  *   2. ใส่ใน Elementor > Custom CSS หรือ Customizer > Additional CSS
  * ============================================================
- * @version  V.11.1
+ * @version  V.12
  * @updated  2026-03-24
  */
 
