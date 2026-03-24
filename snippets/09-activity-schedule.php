@@ -8,7 +8,7 @@
  * ระบบจัดการตารางกิจกรรม: วัน เวลา สถานที่ ชื่อกิจกรรม
  * Shortcode: [lfciath_activity_schedule count="10" show_past="no" type="" view="cards" age_group="" show_filter="no"]
  * ============================================================
- * @version  V.12.1
+ * @version  V.12.2
  * @updated  2026-03-24
  */
 
@@ -118,6 +118,44 @@ function lfciath_activity_hide_edit_menu() {
     remove_submenu_page( 'lfciath-activities', 'lfciath-activity-edit' );
 }
 add_action( 'admin_head', 'lfciath_activity_hide_edit_menu' );
+
+// ============================================================
+// Admin: Responsive CSS for the activities list table
+// Columns order: 1=วันที่, 2=เวลา, 3=ชื่อกิจกรรม, 4=กลุ่มอายุ,
+//                5=ประเภท, 6=สถานที่, 7=สถานะ, 8=จัดการ
+// On < 640px: hide เวลา (col 2) and สถานที่ (col 6)
+// ============================================================
+function lfciath_activity_admin_responsive_css() {
+    $screen = get_current_screen();
+    if ( ! $screen || false === strpos( $screen->id, 'lfciath-activities' ) ) {
+        return;
+    }
+    ?>
+    <style id="lfciath-activity-admin-responsive">
+    @media screen and (max-width: 782px) {
+        /* Hide เวลา column (2nd) */
+        .wp-list-table.widefat thead tr th:nth-child(2),
+        .wp-list-table.widefat tbody tr td:nth-child(2) { display: none; }
+        /* Hide สถานที่ column (6th) */
+        .wp-list-table.widefat thead tr th:nth-child(6),
+        .wp-list-table.widefat tbody tr td:nth-child(6) { display: none; }
+        /* Compact the remaining columns */
+        .wp-list-table.widefat th,
+        .wp-list-table.widefat td { font-size: 12px; padding: 8px 6px; }
+        /* จัดการ buttons: stack vertically */
+        .wp-list-table.widefat td:last-child .button { display: block; margin-bottom: 4px; }
+    }
+    @media screen and (max-width: 480px) {
+        /* Also hide กลุ่มอายุ (col 4) on very small screens */
+        .wp-list-table.widefat thead tr th:nth-child(4),
+        .wp-list-table.widefat tbody tr td:nth-child(4) { display: none; }
+        /* Make ชื่อกิจกรรม column allow wrapping */
+        .wp-list-table.widefat tbody tr td:nth-child(3) { word-break: break-word; max-width: 120px; }
+    }
+    </style>
+    <?php
+}
+add_action( 'admin_head', 'lfciath_activity_admin_responsive_css' );
 
 // ============================================================
 // 5. Save Handler
@@ -779,12 +817,19 @@ function lfciath_build_activity_schedule( $atts ) {
         'order'   => 'ASC',
     );
 
+    // Main query: upcoming + ongoing only (exclude completed/cancelled when show_past=no)
     if ( 'no' === $atts['show_past'] ) {
         $args['meta_query'][] = array(
-            'key'     => 'activity_date',
-            'value'   => $today,
-            'compare' => '>=',
-            'type'    => 'DATE',
+            'key'     => 'activity_status',
+            'value'   => array( 'upcoming', 'ongoing' ),
+            'compare' => 'IN',
+        );
+    } else {
+        // show_past=yes: main query shows upcoming + ongoing only; completed shown separately below
+        $args['meta_query'][] = array(
+            'key'     => 'activity_status',
+            'value'   => array( 'upcoming', 'ongoing' ),
+            'compare' => 'IN',
         );
     }
 
@@ -803,6 +848,43 @@ function lfciath_build_activity_schedule( $atts ) {
     }
 
     $query = new WP_Query( $args );
+
+    // Past activities query (show_past="yes" only)
+    $past_query = null;
+    if ( 'yes' === $atts['show_past'] ) {
+        $past_args = array(
+            'post_type'      => 'lfciath_activity',
+            'posts_per_page' => intval( $atts['count'] ),
+            'post_status'    => 'publish',
+            'meta_query'     => array(
+                'relation'    => 'AND',
+                'date_clause' => array(
+                    'key'  => 'activity_date',
+                    'type' => 'DATE',
+                ),
+                array(
+                    'key'     => 'activity_status',
+                    'value'   => 'completed',
+                    'compare' => '=',
+                ),
+            ),
+            'orderby' => 'date_clause',
+            'order'   => 'DESC',
+        );
+        if ( $active_type ) {
+            $past_args['meta_query'][] = array(
+                'key'   => 'activity_type',
+                'value' => $active_type,
+            );
+        }
+        if ( ! empty( $atts['age_group'] ) ) {
+            $past_args['meta_query'][] = array(
+                'key'   => 'activity_age_group',
+                'value' => sanitize_text_field( $atts['age_group'] ),
+            );
+        }
+        $past_query = new WP_Query( $past_args );
+    }
 
     ob_start();
     ?>
@@ -1054,6 +1136,217 @@ function lfciath_build_activity_schedule( $atts ) {
     <?php endif; ?>
 
     </div>
+
+    <?php
+    // ======= PAST ACTIVITIES SECTION (show_past="yes") =======
+    if ( $past_query && $past_query->have_posts() ) :
+    ?>
+    <div class="lfciath-activity-past-section">
+        <h3 class="lfciath-activity-past-heading">กิจกรรมที่ผ่านมา</h3>
+
+        <?php if ( 'table' === $atts['view'] ) : ?>
+        <div class="lfciath-activity-table-wrap lfciath-activity-past">
+            <table class="lfciath-activity-table">
+                <thead>
+                    <tr>
+                        <th>วันที่</th>
+                        <th>เวลา</th>
+                        <th>ชื่อกิจกรรม</th>
+                        <th>สถานที่</th>
+                        <th>ประเภท</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ( $past_query->have_posts() ) : $past_query->the_post();
+                    $p_id       = get_the_ID();
+                    $p_date     = get_post_meta( $p_id, 'activity_date',         true );
+                    $p_time_s   = get_post_meta( $p_id, 'activity_time_start',   true );
+                    $p_time_e   = get_post_meta( $p_id, 'activity_time_end',     true );
+                    $p_loc      = get_post_meta( $p_id, 'activity_location',     true );
+                    $p_loc_url  = get_post_meta( $p_id, 'activity_location_url', true );
+                    $p_type     = get_post_meta( $p_id, 'activity_type',         true );
+                    $p_age      = get_post_meta( $p_id, 'activity_age_group',    true );
+                    $p_desc     = get_post_meta( $p_id, 'activity_description',  true );
+                    $p_date_end = get_post_meta( $p_id, 'activity_date_end',     true );
+                    $p_type_info = isset( $types[ $p_type ] ) ? $types[ $p_type ] : $types['other'];
+
+                    $p_is_multiday = $p_date_end && $p_date_end !== $p_date && $p_date_end > $p_date;
+
+                    $pd       = $p_date ? explode( '-', $p_date ) : array( '', '', '' );
+                    $p_day    = isset( $pd[2] ) ? ltrim( $pd[2], '0' ) : '';
+                    $p_month  = isset( $pd[1] ) && isset( $thai_months[ $pd[1] ] ) ? $thai_months[ $pd[1] ] : '';
+                    $p_year   = isset( $pd[0] ) ? ( intval( $pd[0] ) + 543 ) : '';
+
+                    if ( $p_is_multiday ) {
+                        $pde      = explode( '-', $p_date_end );
+                        $p_end_d  = isset( $pde[2] ) ? ltrim( $pde[2], '0' ) : '';
+                        $p_end_m  = isset( $pde[1] ) && isset( $thai_months[ $pde[1] ] ) ? $thai_months[ $pde[1] ] : '';
+                        $p_same_m = ( $pd[0] === $pde[0] ) && ( $pd[1] === $pde[1] );
+                    }
+
+                    $p_time_html = $p_time_s ? esc_html( $p_time_s ) : '—';
+                    if ( $p_time_s && $p_time_e ) {
+                        $p_time_html .= '<br><small>' . esc_html( $p_time_e ) . '</small>';
+                    }
+                    ?>
+                    <tr class="lfciath-act-row is-past">
+                        <td class="lfciath-act-date-cell">
+                            <?php if ( $p_is_multiday ) : ?>
+                                <strong class="lfciath-act-day" style="font-size:13px;"><?php echo esc_html( $p_day . '–' . $p_end_d ); ?></strong>
+                                <span class="lfciath-act-month"><?php echo esc_html( ( $p_same_m ? $p_month : $p_month . '–' . $p_end_m ) . ' ' . $p_year ); ?></span>
+                            <?php else : ?>
+                                <strong class="lfciath-act-day"><?php echo esc_html( $p_day ); ?></strong>
+                                <span class="lfciath-act-month"><?php echo esc_html( $p_month . ' ' . $p_year ); ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="lfciath-act-time-cell">
+                            <?php echo wp_kses( $p_time_html, array( 'br' => array(), 'small' => array() ) ); ?>
+                        </td>
+                        <td>
+                            <strong><?php the_title(); ?></strong>
+                            <?php if ( $p_age ) : ?>
+                                <span class="lfciath-act-age-badge"><?php echo esc_html( $p_age ); ?></span>
+                            <?php endif; ?>
+                            <?php if ( $p_desc ) : ?>
+                                <br><small style="color:#aaa;"><?php echo esc_html( wp_trim_words( $p_desc, 12 ) ); ?></small>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ( $p_loc_url ) : ?>
+                                <a href="<?php echo esc_url( $p_loc_url ); ?>" target="_blank" rel="noopener" class="lfciath-act-map-link">
+                                    📍 <?php echo esc_html( $p_loc ?: 'ดูแผนที่' ); ?>
+                                </a>
+                            <?php elseif ( $p_loc ) : ?>
+                                📍 <?php echo esc_html( $p_loc ); ?>
+                            <?php else : ?>
+                                <span style="color:#ccc;">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <span class="lfciath-act-type-badge"
+                                  style="background:<?php echo esc_attr( $p_type_info['color'] ); ?>;">
+                                <?php echo esc_html( $p_type_info['icon'] . ' ' . $p_type_info['label'] ); ?>
+                            </span>
+                        </td>
+                    </tr>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <?php else : ?>
+        <!-- Past Cards View -->
+        <div class="lfciath-activity-cards lfciath-activity-past">
+            <?php while ( $past_query->have_posts() ) : $past_query->the_post();
+            $p_id        = get_the_ID();
+            $p_date      = get_post_meta( $p_id, 'activity_date',         true );
+            $p_time_s    = get_post_meta( $p_id, 'activity_time_start',   true );
+            $p_time_e    = get_post_meta( $p_id, 'activity_time_end',     true );
+            $p_loc       = get_post_meta( $p_id, 'activity_location',     true );
+            $p_loc_url   = get_post_meta( $p_id, 'activity_location_url', true );
+            $p_type      = get_post_meta( $p_id, 'activity_type',         true );
+            $p_age       = get_post_meta( $p_id, 'activity_age_group',    true );
+            $p_desc      = get_post_meta( $p_id, 'activity_description',  true );
+            $p_date_end  = get_post_meta( $p_id, 'activity_date_end',     true );
+            $p_img_id    = (int) get_post_meta( $p_id, 'activity_image_id', true );
+            $p_img_url   = $p_img_id ? wp_get_attachment_image_url( $p_img_id, 'medium' ) : '';
+            $p_type_info = isset( $types[ $p_type ] ) ? $types[ $p_type ] : $types['other'];
+
+            $p_is_multiday = $p_date_end && $p_date_end !== $p_date && $p_date_end > $p_date;
+
+            $pd          = $p_date ? explode( '-', $p_date ) : array( '', '', '' );
+            $p_day_num   = isset( $pd[2] ) ? ltrim( $pd[2], '0' ) : '';
+            $p_month_th  = isset( $pd[1] ) && isset( $thai_months[ $pd[1] ] ) ? $thai_months[ $pd[1] ] : '';
+            $p_year_th   = isset( $pd[0] ) ? ( intval( $pd[0] ) + 543 ) : '';
+            $p_dow       = $p_date ? lfciath_thai_day_abbr( (int) wp_date( 'w', strtotime( $p_date ) ) ) : '';
+
+            $pde          = $p_is_multiday ? explode( '-', $p_date_end ) : array();
+            $p_end_day    = isset( $pde[2] ) ? ltrim( $pde[2], '0' ) : '';
+            $p_end_mon_th = isset( $pde[1] ) && isset( $thai_months[ $pde[1] ] ) ? $thai_months[ $pde[1] ] : '';
+            $p_end_yr_th  = isset( $pde[0] ) ? ( intval( $pde[0] ) + 543 ) : '';
+            $p_same_month = $p_is_multiday && ( $pd[0] === $pde[0] ) && ( $pd[1] === $pde[1] );
+
+            $p_time_display = '';
+            if ( $p_time_s ) {
+                $p_time_display = $p_time_s . ' น.';
+                if ( $p_time_e ) {
+                    $p_time_display .= ' – ' . $p_time_e . ' น.';
+                }
+            }
+            ?>
+            <div class="lfciath-activity-card is-past"
+                 style="--act-color:<?php echo esc_attr( $p_type_info['color'] ); ?>;">
+
+                <!-- Date Column -->
+                <div class="lfciath-act-date-col" style="background:<?php echo esc_attr( $p_type_info['color'] ); ?>;opacity:.65;">
+                    <?php if ( $p_is_multiday ) : ?>
+                        <span class="lfciath-act-dow" style="font-size:9px;letter-spacing:.3px;">ช่วงเวลา</span>
+                        <span class="lfciath-act-day-big" style="font-size:18px;line-height:1.1;"><?php echo esc_html( $p_day_num . '–' . $p_end_day ); ?></span>
+                        <span class="lfciath-act-month-sm"><?php echo esc_html( $p_same_month ? $p_month_th : $p_month_th . '–' . $p_end_mon_th ); ?></span>
+                        <span class="lfciath-act-year-sm"><?php echo esc_html( $p_year_th ); ?></span>
+                    <?php else : ?>
+                        <span class="lfciath-act-dow"><?php echo esc_html( $p_dow ); ?></span>
+                        <span class="lfciath-act-day-big"><?php echo esc_html( $p_day_num ); ?></span>
+                        <span class="lfciath-act-month-sm"><?php echo esc_html( $p_month_th ); ?></span>
+                        <span class="lfciath-act-year-sm"><?php echo esc_html( $p_year_th ); ?></span>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Content Column -->
+                <div class="lfciath-act-card-body">
+                    <div class="lfciath-act-card-meta">
+                        <span class="lfciath-act-type-badge"
+                              style="background:<?php echo esc_attr( $p_type_info['color'] ); ?>;">
+                            <?php echo esc_html( $p_type_info['icon'] . ' ' . $p_type_info['label'] ); ?>
+                        </span>
+                        <?php if ( $p_age ) : ?>
+                            <span class="lfciath-act-age-badge"><?php echo esc_html( $p_age ); ?></span>
+                        <?php endif; ?>
+                        <span class="lfciath-act-completed-badge">เสร็จสิ้น</span>
+                    </div>
+
+                    <h4 class="lfciath-act-card-title"><?php the_title(); ?></h4>
+
+                    <?php if ( $p_img_url ) : ?>
+                    <div class="lfciath-act-card-img">
+                        <img src="<?php echo esc_url( $p_img_url ); ?>" alt="<?php the_title_attribute(); ?>" loading="lazy" />
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if ( $p_time_display ) : ?>
+                    <p class="lfciath-act-card-detail">
+                        🕐 <?php echo esc_html( $p_time_display ); ?>
+                    </p>
+                    <?php endif; ?>
+
+                    <?php if ( $p_loc ) : ?>
+                    <p class="lfciath-act-card-detail">
+                        <?php if ( $p_loc_url ) : ?>
+                            <a href="<?php echo esc_url( $p_loc_url ); ?>" target="_blank" rel="noopener" class="lfciath-act-map-link">
+                                📍 <?php echo esc_html( $p_loc ); ?>
+                            </a>
+                        <?php else : ?>
+                            📍 <?php echo esc_html( $p_loc ); ?>
+                        <?php endif; ?>
+                    </p>
+                    <?php endif; ?>
+
+                    <?php if ( $p_desc ) : ?>
+                    <p class="lfciath-act-card-desc"><?php echo esc_html( wp_trim_words( $p_desc, 20, '...' ) ); ?></p>
+                    <?php endif; ?>
+                </div>
+
+            </div>
+            <?php endwhile; ?>
+        </div>
+        <?php endif; ?>
+
+    </div>
+    <?php
+    wp_reset_postdata();
+    endif; // end past_query have_posts
+    ?>
+
     <?php
     wp_reset_postdata();
     return ob_get_clean();
@@ -1094,7 +1387,13 @@ function lfciath_activity_enqueue_css() {
     gap: 8px;
     flex-wrap: wrap;
     margin-bottom: 20px;
+    /* Mobile: horizontal scroll instead of wrapping */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    /* prevent scrollbar on desktop where wrap works fine */
+    scrollbar-width: none;
 }
+.lfciath-act-filter-bar::-webkit-scrollbar { display: none; }
 .lfciath-act-filter-tab {
     padding: 6px 16px;
     border-radius: 20px;
@@ -1105,6 +1404,7 @@ function lfciath_activity_enqueue_css() {
     color: var(--lfc-gray-dark, #333);
     transition: var(--lfc-transition, all 0.3s ease);
     border: 1px solid transparent;
+    flex-shrink: 0;
 }
 .lfciath-act-filter-tab:hover {
     background: #e8e8e8;
@@ -1227,10 +1527,13 @@ function lfciath_activity_enqueue_css() {
     border-radius: 6px;
     overflow: hidden;
     line-height: 0;
+    background: #f5f5f5;
 }
 .lfciath-act-card-img img {
     width: 100%;
+    max-height: 300px;
     height: auto;
+    object-fit: contain;
     display: block;
     border-radius: 6px;
 }
@@ -1302,6 +1605,42 @@ function lfciath_activity_enqueue_css() {
     background: #ffebee;
     color: #B71C1C;
 }
+.lfciath-act-completed-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #e8f5e9;
+    color: #2E7D32;
+}
+
+/* ----- Past Activities Section ----- */
+.lfciath-activity-past-section {
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 2px dashed #e0e0e0;
+}
+.lfciath-activity-past-heading {
+    font-size: 16px;
+    font-weight: 700;
+    color: #999;
+    margin: 0 0 16px;
+    letter-spacing: .3px;
+}
+.lfciath-activity-past .lfciath-activity-card,
+.lfciath-activity-past .lfciath-act-row {
+    opacity: .6;
+    filter: grayscale(30%);
+}
+.lfciath-activity-past .lfciath-activity-card:hover {
+    opacity: .8;
+    filter: grayscale(0%);
+}
+.lfciath-activity-past.lfciath-activity-table-wrap table {
+    opacity: .65;
+}
+
 .lfciath-act-map-link {
     color: var(--lfc-red, #C8102E);
     text-decoration: none;
@@ -1311,17 +1650,125 @@ function lfciath_activity_enqueue_css() {
 
 /* ----- Responsive ----- */
 @media (max-width: 640px) {
+    /* Cards: single column */
     .lfciath-activity-cards {
         grid-template-columns: 1fr;
     }
+    /* Filter tabs: horizontal scroll, no wrapping */
+    .lfciath-act-filter-bar {
+        flex-wrap: nowrap;
+    }
+    /* Table: compact padding */
     .lfciath-activity-table th,
     .lfciath-activity-table td {
         padding: 8px 10px;
         font-size: 12px;
     }
+    /* Frontend table (view="table"): hide เวลา (col 2) and สถานที่ (col 4) */
+    .lfciath-activity-table thead tr th:nth-child(2),
+    .lfciath-activity-table tbody tr td:nth-child(2),
+    .lfciath-activity-table thead tr th:nth-child(4),
+    .lfciath-activity-table tbody tr td:nth-child(4) {
+        display: none;
+    }
     .lfciath-act-day-big { font-size: 24px; }
     .lfciath-act-date-col { min-width: 56px; }
+}
+@media (max-width: 480px) {
+    /* Date column narrower on very small screens */
+    .lfciath-act-date-col { min-width: 48px; padding: 10px 6px; }
+    .lfciath-act-day-big { font-size: 20px; }
+    .lfciath-act-dow { font-size: 10px; }
+    /* Card body tighter padding */
+    .lfciath-act-card-body { padding: 10px 12px; }
+    .lfciath-act-card-title { font-size: 14px; }
+    /* Activity card image: cap height on very small screens */
+    .lfciath-act-card-img img { max-height: 200px; }
 }
     ' );
 }
 add_action( 'wp_enqueue_scripts', 'lfciath_activity_enqueue_css' );
+
+// ============================================================
+// 14. Auto-update Activity Status via WP-Cron (daily)
+// ============================================================
+
+/**
+ * Schedule the daily cron on init if not already scheduled.
+ */
+function lfciath_schedule_activity_status_cron() {
+    if ( ! wp_next_scheduled( 'lfciath_activity_cron' ) ) {
+        wp_schedule_event( time(), 'daily', 'lfciath_activity_cron' );
+    }
+}
+add_action( 'init', 'lfciath_schedule_activity_status_cron' );
+
+/**
+ * Cron callback: auto-update activity_status for upcoming/ongoing activities.
+ *
+ * Logic:
+ *  - activity_date > today                                          → upcoming
+ *  - activity_date <= today AND (activity_date_end >= today OR no end date AND activity_date == today) → ongoing
+ *  - activity_date_end < today OR (no end date AND activity_date < today)                             → completed
+ */
+function lfciath_auto_update_activity_status() {
+    $today = current_time( 'Y-m-d' );
+
+    $args = array(
+        'post_type'      => 'lfciath_activity',
+        'posts_per_page' => -1,
+        'post_status'    => 'publish',
+        'fields'         => 'ids',
+        'meta_query'     => array(
+            array(
+                'key'     => 'activity_status',
+                'value'   => array( 'upcoming', 'ongoing' ),
+                'compare' => 'IN',
+            ),
+        ),
+    );
+
+    $post_ids = get_posts( $args );
+
+    foreach ( $post_ids as $post_id ) {
+        $start = get_post_meta( $post_id, 'activity_date',     true );
+        $end   = get_post_meta( $post_id, 'activity_date_end', true );
+
+        if ( empty( $start ) ) {
+            continue;
+        }
+
+        $new_status = '';
+
+        if ( $start > $today ) {
+            // กิจกรรมยังไม่ถึง
+            $new_status = 'upcoming';
+        } elseif ( $start <= $today ) {
+            if ( ! empty( $end ) ) {
+                // มีวันสิ้นสุด
+                if ( $end >= $today ) {
+                    $new_status = 'ongoing';
+                } else {
+                    // end < today
+                    $new_status = 'completed';
+                }
+            } else {
+                // ไม่มีวันสิ้นสุด: ถ้าเป็นวันนี้ = ongoing, ก่อนหน้า = completed
+                if ( $start === $today ) {
+                    $new_status = 'ongoing';
+                } else {
+                    // start < today
+                    $new_status = 'completed';
+                }
+            }
+        }
+
+        if ( $new_status ) {
+            $current = get_post_meta( $post_id, 'activity_status', true );
+            if ( $current !== $new_status ) {
+                update_post_meta( $post_id, 'activity_status', $new_status );
+            }
+        }
+    }
+}
+add_action( 'lfciath_activity_cron', 'lfciath_auto_update_activity_status' );
