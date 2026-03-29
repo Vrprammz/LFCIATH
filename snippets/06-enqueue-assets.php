@@ -410,10 +410,10 @@ function lfciath_get_news_css() {
 .lfciath-single-news { max-width: 100%; margin: 0 auto; }
 .lfciath-news-hero { width: 100%; max-height: 540px; overflow: hidden; }
 .lfciath-news-hero-img { width: 100%; height: auto; display: block; object-fit: cover; max-height: 540px; }
-.lfciath-news-hero-bar { width: 100%; background: linear-gradient(to top, #C8102E 85%, rgba(200,16,46,0.7) 100%); padding: 40px 5% 32px; margin-top: -80px; position: relative; z-index: 2; }
+.lfciath-news-hero-bar { width: 100%; background: #C8102E; padding: 80px 5% 40px; margin-top: -120px; position: relative; z-index: 2; -webkit-mask-image: linear-gradient(to top, #000 70%, transparent 100%); mask-image: linear-gradient(to top, #000 70%, transparent 100%); }
 .lfciath-news-hero-content { max-width: 1200px; margin: 0 auto; }
-.lfciath-news-title { font-family: var(--lfc-font-thai); font-size: clamp(22px, 5vw, 48px); font-weight: 700; color: var(--lfc-white); line-height: 1.3; margin: 0 0 12px; }
-.lfciath-news-subtitle { font-family: var(--lfc-font-thai); font-size: clamp(14px, 2.5vw, 20px); color: rgba(255, 255, 255, 0.9); line-height: 1.5; margin: 0; font-weight: 300; }
+.lfciath-news-title { font-family: var(--lfc-font-thai); font-size: clamp(20px, 3.2vw, 38px); font-weight: 700; color: var(--lfc-white); line-height: 1.3; margin: 0 0 12px; }
+.lfciath-news-subtitle { font-family: var(--lfc-font-thai); font-size: clamp(13px, 1.8vw, 18px); color: rgba(255, 255, 255, 0.9); line-height: 1.5; margin: 0; font-weight: 300; }
 
 /* SINGLE NEWS - Meta & Social Share */
 .lfciath-news-meta-wrapper { max-width: 1200px; margin: 0 auto; padding: 30px 5%; display: flex; flex-wrap: wrap; align-items: center; gap: 20px; border-bottom: 1px solid #eee; }
@@ -617,14 +617,14 @@ function lfciath_get_news_css() {
 }
 @media (max-width: 768px) {
     /* Hero image — cap height on tablet */
-    .lfciath-news-hero { max-height: 320px; }
-    .lfciath-news-hero-img { max-height: 320px; }
-    .lfciath-news-hero-bar { padding: 30px 5% 24px; }
+    .lfciath-news-hero { max-height: 300px; }
+    .lfciath-news-hero-img { max-height: 300px; }
+    .lfciath-news-hero-bar { margin-top: -100px; padding: 60px 5% 28px; }
     /* Archive leaderboard banner — cap height on tablet */
     .lfciath-archive-banner-wrap img { max-height: 60px; }
     /* Hero typography — fluid clamp handles scaling; reinforce floor at tablet */
-    .lfciath-news-title { font-size: clamp(20px, 4.5vw, 32px); }
-    .lfciath-news-subtitle { font-size: clamp(13px, 3vw, 16px); }
+    .lfciath-news-title { font-size: clamp(18px, 4vw, 28px); }
+    .lfciath-news-subtitle { font-size: clamp(12px, 2.5vw, 15px); }
     /* Meta + share */
     .lfciath-news-meta-wrapper { flex-direction: column; align-items: flex-start; }
     .lfciath-news-share { margin-left: 0; }
@@ -668,9 +668,9 @@ function lfciath_get_news_css() {
     /* Hero image + bar on small screens */
     .lfciath-news-hero { max-height: 220px; }
     .lfciath-news-hero-img { max-height: 220px; }
-    .lfciath-news-hero-bar { margin-top: -40px; padding: 24px 5% 20px; }
-    .lfciath-news-title { font-size: clamp(18px, 5vw, 26px); }
-    .lfciath-news-subtitle { font-size: clamp(12px, 3.5vw, 15px); }
+    .lfciath-news-hero-bar { margin-top: -70px; padding: 44px 5% 24px; }
+    .lfciath-news-title { font-size: clamp(16px, 4.5vw, 22px); }
+    .lfciath-news-subtitle { font-size: clamp(11px, 3vw, 14px); }
     /* Grids — single column */
     .lfciath-news-grid.columns-2, .lfciath-news-grid.columns-3, .lfciath-news-grid.columns-4 { grid-template-columns: 1fr; }
     .lfciath-related-grid { grid-template-columns: 1fr; }
@@ -713,8 +713,8 @@ function lfciath_get_news_css() {
     /* Extra-small phones (iPhone SE etc.) */
     .lfciath-news-hero { max-height: 180px; }
     .lfciath-news-hero-img { max-height: 180px; }
-    .lfciath-news-hero-bar { margin-top: -30px; padding: 20px 5% 16px; }
-    .lfciath-news-title { font-size: clamp(17px, 5vw, 24px); }
+    .lfciath-news-hero-bar { margin-top: -50px; padding: 36px 5% 20px; }
+    .lfciath-news-title { font-size: clamp(15px, 4.5vw, 20px); }
     .lfciath-card-title { font-size: 14px; }
     .lfciath-card-content { padding: 14px; }
     .lfciath-match-team span { max-width: 44px; font-size: 9px; }
