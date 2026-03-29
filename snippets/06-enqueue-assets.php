@@ -226,31 +226,52 @@ function lfciath_add_btn_style() {
 add_action( 'wp_head', 'lfciath_add_btn_style' );
 
 // ========================================
-// Open Graph meta tags สำหรับ Facebook / LINE / Social share
+// Open Graph — override Yoast SEO ให้แสดง title/subtitle เต็ม
 // ========================================
-function lfciath_og_meta_tags() {
-    if ( ! is_singular( 'lfciath_news' ) ) {
-        return;
-    }
-    $post_id  = get_the_ID();
-    $title    = get_the_title( $post_id );
-    $subtitle = get_field( 'news_subtitle', $post_id );
-    $hero     = get_field( 'news_hero_image', $post_id );
-    $hero_url = is_array( $hero ) ? $hero['url'] : ( is_numeric( $hero ) ? wp_get_attachment_url( $hero ) : '' );
-    $url      = get_permalink( $post_id );
 
-    echo '<meta property="og:type"        content="article" />' . "\n";
-    echo '<meta property="og:title"       content="' . esc_attr( $title ) . '" />' . "\n";
-    if ( $subtitle ) {
-        echo '<meta property="og:description" content="' . esc_attr( $subtitle ) . '" />' . "\n";
+// og:title — ใช้หัวข้อข่าวเต็มไม่ตัด
+add_filter( 'wpseo_opengraph_title', function( $title ) {
+    if ( is_singular( 'lfciath_news' ) ) {
+        return get_the_title();
     }
-    if ( $hero_url ) {
-        echo '<meta property="og:image"       content="' . esc_url( $hero_url ) . '" />' . "\n";
+    return $title;
+} );
+
+// og:description — ใช้ subtitle (คำบรรยายรอง) เต็ม
+add_filter( 'wpseo_opengraph_desc', function( $desc ) {
+    if ( is_singular( 'lfciath_news' ) ) {
+        $subtitle = get_field( 'news_subtitle', get_the_ID() );
+        return $subtitle ?: $desc;
     }
-    echo '<meta property="og:url"         content="' . esc_url( $url ) . '" />' . "\n";
-    echo '<meta property="og:site_name"   content="LFC International Academy Thailand" />' . "\n";
-}
-add_action( 'wp_head', 'lfciath_og_meta_tags', 5 );
+    return $desc;
+} );
+
+// og:image — ใช้ hero image
+add_filter( 'wpseo_opengraph_image', function( $image ) {
+    if ( is_singular( 'lfciath_news' ) ) {
+        $hero = get_field( 'news_hero_image', get_the_ID() );
+        $url  = is_array( $hero ) ? $hero['url'] : ( is_numeric( $hero ) ? wp_get_attachment_url( $hero ) : '' );
+        if ( $url ) {
+            return $url;
+        }
+    }
+    return $image;
+} );
+
+// Twitter card — title + description เต็ม
+add_filter( 'wpseo_twitter_title', function( $title ) {
+    if ( is_singular( 'lfciath_news' ) ) {
+        return get_the_title();
+    }
+    return $title;
+} );
+add_filter( 'wpseo_twitter_description', function( $desc ) {
+    if ( is_singular( 'lfciath_news' ) ) {
+        $subtitle = get_field( 'news_subtitle', get_the_ID() );
+        return $subtitle ?: $desc;
+    }
+    return $desc;
+} );
 
 // ========================================
 // Site Header สำหรับหน้าข่าว (เหมือน Elementor header ของเว็บ)
