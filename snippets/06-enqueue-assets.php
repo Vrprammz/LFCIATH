@@ -410,10 +410,10 @@ function lfciath_get_news_css() {
 .lfciath-single-news { max-width: 100%; margin: 0 auto; }
 .lfciath-news-hero { width: 100%; max-height: 540px; overflow: hidden; }
 .lfciath-news-hero-img { width: 100%; height: auto; display: block; object-fit: cover; max-height: 540px; }
-.lfciath-news-hero-bar { width: 100%; background: #C8102E; padding: 80px 5% 40px; margin-top: -120px; position: relative; z-index: 2; -webkit-mask-image: linear-gradient(to top, #000 70%, transparent 100%); mask-image: linear-gradient(to top, #000 70%, transparent 100%); }
-.lfciath-news-hero-content { max-width: 1200px; margin: 0 auto; }
-.lfciath-news-title { font-family: var(--lfc-font-thai); font-size: clamp(20px, 3.2vw, 38px); font-weight: 700; color: var(--lfc-white); line-height: 1.3; margin: 0 0 12px; }
-.lfciath-news-subtitle { font-family: var(--lfc-font-thai); font-size: clamp(13px, 1.8vw, 18px); color: rgba(255, 255, 255, 0.9); line-height: 1.5; margin: 0; font-weight: 300; }
+.lfciath-news-hero-bar { width: 100%; background: #C8102E; padding: 80px 5% 40px; margin-top: -120px; position: relative; z-index: 2; overflow: hidden; box-sizing: border-box; -webkit-mask-image: linear-gradient(to top, #000 70%, transparent 100%); mask-image: linear-gradient(to top, #000 70%, transparent 100%); }
+.lfciath-news-hero-content { max-width: 1200px; margin: 0 auto; overflow-wrap: break-word; word-wrap: break-word; }
+.lfciath-news-title { font-family: var(--lfc-font-thai); font-size: clamp(20px, 3.2vw, 38px); font-weight: 700; color: var(--lfc-white); line-height: 1.3; margin: 0 0 12px; overflow-wrap: break-word; word-wrap: break-word; }
+.lfciath-news-subtitle { font-family: var(--lfc-font-thai); font-size: clamp(13px, 1.8vw, 18px); color: rgba(255, 255, 255, 0.9); line-height: 1.5; margin: 0; font-weight: 300; overflow-wrap: break-word; word-wrap: break-word; }
 
 /* SINGLE NEWS - Meta & Social Share */
 .lfciath-news-meta-wrapper { max-width: 1200px; margin: 0 auto; padding: 30px 5%; display: flex; flex-wrap: wrap; align-items: center; gap: 20px; border-bottom: 1px solid #eee; }
