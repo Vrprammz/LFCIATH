@@ -668,7 +668,7 @@ function lfciath_get_news_css() {
     /* Hero image + bar on small screens */
     .lfciath-news-hero { max-height: 220px; }
     .lfciath-news-hero-img { max-height: 220px; }
-    .lfciath-news-hero-bar { margin-top: -70px; padding: 44px 5% 24px; }
+    .lfciath-news-hero-bar { margin-top: -90px; padding: 60px 5% 32px; }
     .lfciath-news-title { font-size: clamp(16px, 4.5vw, 22px); }
     .lfciath-news-subtitle { font-size: clamp(11px, 3vw, 14px); }
     /* Grids — single column */
@@ -713,7 +713,7 @@ function lfciath_get_news_css() {
     /* Extra-small phones (iPhone SE etc.) */
     .lfciath-news-hero { max-height: 180px; }
     .lfciath-news-hero-img { max-height: 180px; }
-    .lfciath-news-hero-bar { margin-top: -50px; padding: 36px 5% 20px; }
+    .lfciath-news-hero-bar { margin-top: -70px; padding: 50px 5% 28px; }
     .lfciath-news-title { font-size: clamp(15px, 4.5vw, 20px); }
     .lfciath-card-title { font-size: 14px; }
     .lfciath-card-content { padding: 14px; }
