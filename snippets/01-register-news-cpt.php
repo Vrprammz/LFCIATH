@@ -5,7 +5,7 @@
  * วิธีใช้: คัดลอกโค้ดนี้ไปวางใน Code Snippets plugin
  * ชื่อ Snippet: "LFCIATH - Register News CPT"
  * ============================================================
- * @version  V.11
+ * @version  V.12
  * @updated  2026-03-24
  */
 

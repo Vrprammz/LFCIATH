@@ -5,7 +5,7 @@
  * ต้อง Activate snippet 8A ก่อน
  * เก็บข้อมูลใน wp_options (ไม่ต้อง ACF)
  * ============================================================
- * @version  V.11
+ * @version  V.12.1
  * @updated  2026-03-24
  */
 
@@ -928,4 +928,559 @@ function lfciath_handle_cc_delete_fixture() {
     wp_redirect( add_query_arg( array( 'view' => 'list-fixtures', 'msg' => 'fixture_deleted' ), $redirect_base ) );
     exit;
 }
+
+// ========================================
+// Archive Banner (แบนเนอร์ยาว / Leaderboard)
+// ========================================
+function lfciath_cc_view_archive_banner( $base_url ) {
+    $ab    = get_option( 'lfciath_archive_banner', array() );
+    $saved = isset( $_GET['msg'] ) && $_GET['msg'] === 'ab_saved';
+
+    $img_id    = intval( $ab['image_id'] ?? 0 );
+    $img_url   = $img_id ? wp_get_attachment_image_url( $img_id, 'large' ) : '';
+    $link_url  = esc_attr( $ab['link_url'] ?? '' );
+    $target    = $ab['link_target'] ?? '_blank';
+    $title     = esc_attr( $ab['title'] ?? '' );
+    $cta_text  = esc_attr( $ab['cta_text'] ?? '' );
+    $bg_color  = esc_attr( $ab['bg_color'] ?? '#1a1a1a' );
+    $is_active = ! empty( $ab['active'] );
+
+    wp_enqueue_media();
+    ?>
+    <?php if ( $saved ) : ?>
+    <div class="lfciath-cc-notice lfciath-cc-notice-success">บันทึกแบนเนอร์ยาวเรียบร้อยแล้ว</div>
+    <?php endif; ?>
+
+    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+        <input type="hidden" name="action" value="lfciath_cc_save_archive_banner" />
+        <input type="hidden" name="lfciath_redirect_base" value="<?php echo esc_url( $base_url ); ?>" />
+        <?php wp_nonce_field( 'lfciath_cc_save_archive_banner', 'lfciath_cc_ab_nonce' ); ?>
+
+        <div style="max-width:700px;">
+
+            <!-- Preview -->
+            <?php if ( $img_url ) : ?>
+            <div class="lfciath-cc-card" style="margin-bottom:16px;">
+                <div class="lfciath-cc-card-header"><span class="dashicons dashicons-visibility"></span> Preview</div>
+                <div style="background:<?php echo esc_attr( $bg_color ); ?>;border-radius:6px;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;">
+                    <img src="<?php echo esc_url( $img_url ); ?>" style="height:60px;object-fit:contain;max-width:200px;" />
+                    <?php if ( $cta_text ) : ?>
+                    <span style="background:#C8102E;color:#fff;padding:8px 18px;border-radius:4px;font-weight:700;font-size:13px;white-space:nowrap;"><?php echo esc_html( $cta_text ); ?></span>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <!-- Settings -->
+            <div class="lfciath-cc-card">
+                <div class="lfciath-cc-card-header"><span class="dashicons dashicons-align-wide"></span> แบนเนอร์ยาว (Leaderboard)</div>
+
+                <label class="lfciath-cc-label">รูปภาพ / Logo</label>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                    <input type="hidden" name="image_id" id="ab-image-id" value="<?php echo esc_attr( $img_id ); ?>" />
+                    <div id="ab-image-preview" style="<?php echo $img_url ? '' : 'display:none;'; ?>">
+                        <img id="ab-image-thumb" src="<?php echo esc_url( $img_url ); ?>" style="height:50px;border-radius:4px;border:1px solid #e5e7eb;" />
+                    </div>
+                    <button type="button" class="lfciath-cc-btn lfciath-cc-btn-outline" id="ab-select-image">เลือกรูป</button>
+                    <button type="button" class="lfciath-cc-btn lfciath-cc-btn-danger" id="ab-remove-image" style="<?php echo $img_url ? '' : 'display:none;'; ?>">ลบ</button>
+                </div>
+
+                <label class="lfciath-cc-label">สีพื้นหลัง</label>
+                <input type="color" name="bg_color" value="<?php echo esc_attr( $bg_color ); ?>" style="height:38px;width:80px;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;margin-bottom:16px;" />
+
+                <label class="lfciath-cc-label">ข้อความปุ่ม CTA (ว่างถ้าไม่ใช้)</label>
+                <input type="text" name="cta_text" value="<?php echo $cta_text; ?>" class="lfciath-cc-input" placeholder="เช่น REGISTER NOW >" style="margin-bottom:16px;" />
+
+                <label class="lfciath-cc-label">ลิงก์ (URL)</label>
+                <input type="url" name="link_url" value="<?php echo $link_url; ?>" class="lfciath-cc-input" placeholder="https://..." style="margin-bottom:16px;" />
+
+                <label class="lfciath-cc-label">เปิดลิงก์</label>
+                <select name="link_target" class="lfciath-cc-input" style="margin-bottom:16px;">
+                    <option value="_blank" <?php selected( $target, '_blank' ); ?>>Tab ใหม่</option>
+                    <option value="_self"  <?php selected( $target, '_self' );  ?>>หน้าเดิม</option>
+                </select>
+
+                <label class="lfciath-cc-label">Alt Text / Title</label>
+                <input type="text" name="title" value="<?php echo $title; ?>" class="lfciath-cc-input" style="margin-bottom:16px;" />
+
+                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:20px;">
+                    <input type="checkbox" name="active" value="1" <?php checked( $is_active ); ?> style="width:16px;height:16px;" />
+                    <span class="lfciath-cc-label" style="margin:0;">เปิดใช้งานแบนเนอร์</span>
+                </label>
+
+                <button type="submit" class="lfciath-cc-btn lfciath-cc-btn-primary">บันทึก</button>
+            </div>
+        </div>
+    </form>
+
+    <script>
+    (function(){
+        var frame;
+        document.getElementById('ab-select-image').addEventListener('click', function(){
+            if (frame) { frame.open(); return; }
+            frame = wp.media({ title: 'เลือกรูปแบนเนอร์', button: { text: 'ใช้รูปนี้' }, multiple: false });
+            frame.on('select', function(){
+                var att = frame.state().get('selection').first().toJSON();
+                document.getElementById('ab-image-id').value = att.id;
+                document.getElementById('ab-image-thumb').src = att.url;
+                document.getElementById('ab-image-preview').style.display = '';
+                document.getElementById('ab-remove-image').style.display = '';
+            });
+            frame.open();
+        });
+        var removeBtn = document.getElementById('ab-remove-image');
+        if (removeBtn) removeBtn.addEventListener('click', function(){
+            document.getElementById('ab-image-id').value = '';
+            document.getElementById('ab-image-thumb').src = '';
+            document.getElementById('ab-image-preview').style.display = 'none';
+            this.style.display = 'none';
+        });
+    })();
+    </script>
+    <?php
+}
+
+function lfciath_handle_cc_save_archive_banner() {
+    if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['lfciath_cc_ab_nonce'] ?? '' ) ), 'lfciath_cc_save_archive_banner' ) ) {
+        wp_die( 'ไม่ถูกต้อง' );
+    }
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( 'ไม่มีสิทธิ์' );
+    }
+
+    update_option( 'lfciath_archive_banner', array(
+        'image_id'    => intval( $_POST['image_id'] ?? 0 ),
+        'link_url'    => esc_url_raw( wp_unslash( $_POST['link_url'] ?? '' ) ),
+        'link_target' => in_array( $_POST['link_target'] ?? '', array( '_blank', '_self' ) ) ? $_POST['link_target'] : '_blank',
+        'title'       => sanitize_text_field( wp_unslash( $_POST['title'] ?? '' ) ),
+        'cta_text'    => sanitize_text_field( wp_unslash( $_POST['cta_text'] ?? '' ) ),
+        'bg_color'    => sanitize_hex_color( $_POST['bg_color'] ?? '#1a1a1a' ) ?: '#1a1a1a',
+        'active'      => isset( $_POST['active'] ) ? 1 : 0,
+    ) );
+
+    $base = esc_url_raw( wp_unslash( $_POST['lfciath_redirect_base'] ?? home_url() ) );
+    wp_redirect( add_query_arg( array( 'view' => 'archive-banner', 'msg' => 'ab_saved' ), $base ) );
+    exit;
+}
+add_action( 'admin_post_lfciath_cc_save_archive_banner', 'lfciath_handle_cc_save_archive_banner' );
+
+// ========================================
+// Activity Form (สร้าง + แก้ไข)
+// ========================================
+function lfciath_cc_view_activity_form( $base_url, $view ) {
+    $post_obj  = null;
+    $post_id   = 0;
+
+    if ( 'edit-activity' === $view && isset( $_GET['id'] ) ) {
+        $post_id  = intval( $_GET['id'] );
+        $post_obj = get_post( $post_id );
+        if ( ! $post_obj || 'lfciath_activity' !== $post_obj->post_type ) {
+            echo '<div class="lfciath-cc-notice lfciath-cc-notice-error">ไม่พบกิจกรรมนี้</div>';
+            return;
+        }
+    }
+
+    $v_title       = $post_obj ? $post_obj->post_title                                    : '';
+    $v_date        = $post_id  ? get_post_meta( $post_id, 'activity_date',        true )  : '';
+    $v_date_end    = $post_id  ? get_post_meta( $post_id, 'activity_date_end',    true )  : '';
+    $v_time_start  = $post_id  ? get_post_meta( $post_id, 'activity_time_start',  true )  : '';
+    $v_time_end    = $post_id  ? get_post_meta( $post_id, 'activity_time_end',    true )  : '';
+    $v_type        = $post_id  ? get_post_meta( $post_id, 'activity_type',        true )  : 'training';
+    $v_age_group   = $post_id  ? get_post_meta( $post_id, 'activity_age_group',   true )  : '';
+    $v_location    = $post_id  ? get_post_meta( $post_id, 'activity_location',    true )  : '';
+    $v_description    = $post_id  ? get_post_meta( $post_id, 'activity_description',  true )  : '';
+    $v_register_url   = $post_id  ? get_post_meta( $post_id, 'activity_register_url', true )  : '';
+    $v_status         = $post_id  ? get_post_meta( $post_id, 'activity_status',       true )  : 'upcoming';
+
+    if ( '' === $v_status ) {
+        $v_status = 'upcoming';
+    }
+    if ( '' === $v_type ) {
+        $v_type = 'training';
+    }
+
+    $activity_types = array(
+        'training' => 'ฝึกซ้อม',
+        'match'    => 'แข่งขัน',
+        'event'    => 'กิจกรรม',
+        'camp'     => 'แคมป์',
+        'other'    => 'อื่นๆ',
+    );
+
+    $status_options = array(
+        'upcoming'  => 'กำลังจะมา',
+        'ongoing'   => 'กำลังดำเนิน',
+        'completed' => 'เสร็จสิ้น',
+        'cancelled' => 'ยกเลิก',
+    );
+    ?>
+
+    <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+        <input type="hidden" name="action"                   value="lfciath_cc_save_activity" />
+        <input type="hidden" name="lfciath_activity_post_id" value="<?php echo esc_attr( $post_id ); ?>" />
+        <input type="hidden" name="lfciath_redirect_base"    value="<?php echo esc_url( $base_url ); ?>" />
+        <?php wp_nonce_field( 'lfciath_cc_save_activity', 'lfciath_cc_activity_nonce' ); ?>
+
+        <div style="max-width:700px;">
+
+            <!-- ข้อมูลกิจกรรม -->
+            <div class="lfciath-cc-card">
+                <div class="lfciath-cc-card-header"><span class="dashicons dashicons-calendar-alt"></span> ข้อมูลกิจกรรม</div>
+
+                <label class="lfciath-cc-label">ชื่อกิจกรรม *</label>
+                <input type="text" name="activity_title" value="<?php echo esc_attr( $v_title ); ?>" class="lfciath-cc-input" placeholder="เช่น ฝึกซ้อมรายสัปดาห์" required style="margin-bottom:12px;" />
+
+                <label class="lfciath-cc-label">ประเภทกิจกรรม *</label>
+                <select name="activity_type" class="lfciath-cc-input" required style="margin-bottom:12px;">
+                    <?php foreach ( $activity_types as $val => $label ) : ?>
+                    <option value="<?php echo esc_attr( $val ); ?>" <?php selected( $v_type, $val ); ?>><?php echo esc_html( $label ); ?></option>
+                    <?php endforeach; ?>
+                </select>
+
+                <div style="display:flex;gap:12px;margin-bottom:12px;">
+                    <div style="flex:1;">
+                        <label class="lfciath-cc-label">วันที่เริ่ม *</label>
+                        <input type="date" name="activity_date" value="<?php echo esc_attr( $v_date ); ?>" class="lfciath-cc-input" required />
+                    </div>
+                    <div style="flex:1;">
+                        <label class="lfciath-cc-label">วันที่สิ้นสุด <small style="font-weight:400;color:#aaa;">(ถ้าหลายวัน)</small></label>
+                        <input type="date" name="activity_date_end" value="<?php echo esc_attr( $v_date_end ); ?>" class="lfciath-cc-input" />
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:12px;margin-bottom:12px;">
+                    <div style="flex:1;">
+                        <label class="lfciath-cc-label">เวลาเริ่ม</label>
+                        <input type="time" name="activity_time_start" value="<?php echo esc_attr( $v_time_start ); ?>" class="lfciath-cc-input" />
+                    </div>
+                    <div style="flex:1;">
+                        <label class="lfciath-cc-label">เวลาสิ้นสุด</label>
+                        <input type="time" name="activity_time_end" value="<?php echo esc_attr( $v_time_end ); ?>" class="lfciath-cc-input" />
+                    </div>
+                </div>
+
+                <label class="lfciath-cc-label">รุ่นอายุ</label>
+                <input type="text" name="activity_age_group" value="<?php echo esc_attr( $v_age_group ); ?>" class="lfciath-cc-input" placeholder="เช่น U12, U14, ทุกรุ่น" style="margin-bottom:12px;" />
+
+                <label class="lfciath-cc-label">สถานที่</label>
+                <input type="text" name="activity_location" value="<?php echo esc_attr( $v_location ); ?>" class="lfciath-cc-input" placeholder="เช่น สนามกีฬา LFCIATH" style="margin-bottom:12px;" />
+
+                <label class="lfciath-cc-label">สถานะ *</label>
+                <select name="activity_status" class="lfciath-cc-input" required style="margin-bottom:12px;">
+                    <?php foreach ( $status_options as $val => $label ) : ?>
+                    <option value="<?php echo esc_attr( $val ); ?>" <?php selected( $v_status, $val ); ?>><?php echo esc_html( $label ); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <!-- รูปกิจกรรม -->
+            <?php
+            $v_image_id  = $post_id ? (int) get_post_meta( $post_id, 'activity_image_id', true ) : 0;
+            $v_image_url = $v_image_id ? wp_get_attachment_image_url( $v_image_id, 'medium' ) : '';
+            wp_enqueue_media();
+            ?>
+            <div class="lfciath-cc-card">
+                <div class="lfciath-cc-card-header"><span class="dashicons dashicons-format-image"></span> รูปกิจกรรม (ไม่บังคับ)</div>
+                <p style="font-size:12px;color:#888;margin:0 0 10px;">แนะนำขนาด 1200×1500 px (แนวตั้ง)</p>
+                <input type="hidden" name="activity_image_id" id="act-image-id" value="<?php echo esc_attr( $v_image_id ); ?>" />
+                <div id="act-image-preview" style="<?php echo $v_image_url ? '' : 'display:none;'; ?>margin-bottom:10px;">
+                    <img id="act-image-thumb" src="<?php echo esc_url( $v_image_url ); ?>" alt="" style="max-width:180px;height:auto;border-radius:6px;border:1px solid #e5e7eb;" />
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button type="button" id="act-select-image" class="lfciath-cc-btn lfciath-cc-btn-secondary">เลือกรูป</button>
+                    <button type="button" id="act-remove-image" class="lfciath-cc-btn lfciath-cc-btn-danger" style="<?php echo $v_image_url ? '' : 'display:none;'; ?>">ลบรูป</button>
+                </div>
+            </div>
+
+            <!-- รายละเอียด -->
+            <div class="lfciath-cc-card">
+                <div class="lfciath-cc-card-header"><span class="dashicons dashicons-editor-alignleft"></span> รายละเอียด</div>
+                <label class="lfciath-cc-label">คำอธิบายกิจกรรม <small style="font-weight:400;color:#aaa;">(ไม่บังคับ — แนะนำไม่เกิน 2-3 บรรทัด)</small></label>
+                <textarea name="activity_description" class="lfciath-cc-input" rows="3" placeholder="รายละเอียดเพิ่มเติม..."><?php echo esc_textarea( $v_description ); ?></textarea>
+
+                <label class="lfciath-cc-label" style="margin-top:12px;">ลิ้งค์สมัคร <small style="font-weight:400;color:#aaa;">(Google Form หรือลิ้งค์สมัคร)</small></label>
+                <input type="url" name="activity_register_url" value="<?php echo esc_attr( $v_register_url ); ?>" class="lfciath-cc-input" placeholder="https://forms.gle/..." />
+            </div>
+
+            <button type="submit" class="lfciath-cc-btn lfciath-cc-btn-primary lfciath-cc-btn-block">
+                <?php echo $post_obj ? 'อัปเดตกิจกรรม' : 'บันทึกกิจกรรม'; ?>
+            </button>
+        </div>
+    </form>
+    <script>
+    (function(){
+        var actFrame;
+        var selectBtn = document.getElementById('act-select-image');
+        if ( selectBtn ) selectBtn.addEventListener('click', function(){
+            if ( actFrame ) { actFrame.open(); return; }
+            actFrame = wp.media({ title: 'เลือกรูปกิจกรรม', button: { text: 'ใช้รูปนี้' }, multiple: false });
+            actFrame.on('select', function(){
+                var att = actFrame.state().get('selection').first().toJSON();
+                document.getElementById('act-image-id').value = att.id;
+                document.getElementById('act-image-thumb').src = att.url;
+                document.getElementById('act-image-preview').style.display = '';
+                document.getElementById('act-remove-image').style.display = '';
+            });
+            actFrame.open();
+        });
+        var removeBtn = document.getElementById('act-remove-image');
+        if ( removeBtn ) removeBtn.addEventListener('click', function(){
+            document.getElementById('act-image-id').value = '';
+            document.getElementById('act-image-thumb').src = '';
+            document.getElementById('act-image-preview').style.display = 'none';
+            this.style.display = 'none';
+        });
+    })();
+    </script>
+    <?php
+}
+
+// ========================================
+// List Activities View
+// ========================================
+function lfciath_cc_view_list_activities( $base_url ) {
+    $query = new WP_Query( array(
+        'post_type'      => 'lfciath_activity',
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'meta_key'       => 'activity_date',
+        'orderby'        => 'meta_value',
+        'order'          => 'ASC',
+    ) );
+
+    $posts = $query->posts;
+
+    $activity_types = array(
+        'training' => 'ฝึกซ้อม',
+        'match'    => 'แข่งขัน',
+        'event'    => 'กิจกรรม',
+        'camp'     => 'แคมป์',
+        'other'    => 'อื่นๆ',
+    );
+
+    $status_options = array(
+        'upcoming'  => array( 'label' => 'กำลังจะมา',    'badge' => 'lfciath-cc-badge-gray' ),
+        'ongoing'   => array( 'label' => 'กำลังดำเนิน', 'badge' => 'lfciath-cc-badge-green' ),
+        'completed' => array( 'label' => 'เสร็จสิ้น',    'badge' => 'lfciath-cc-badge-gray' ),
+        'cancelled' => array( 'label' => 'ยกเลิก',       'badge' => 'lfciath-cc-badge-red' ),
+    );
+    ?>
+
+    <style>
+    /* ── Activity list table — responsive columns ── */
+    @media (max-width: 767px) {
+        /* Hide เวลา (col 4) and สถานที่ (col 5) */
+        .lfciath-cc-table thead tr th:nth-child(4),
+        .lfciath-cc-table thead tr th:nth-child(5),
+        .lfciath-cc-table tbody tr td:nth-child(4),
+        .lfciath-cc-table tbody tr td:nth-child(5) {
+            display: none;
+        }
+    }
+    @media (max-width: 479px) {
+        /* Also hide ประเภท (col 2) — keep ชื่อ, วันที่, สถานะ, จัดการ */
+        .lfciath-cc-table thead tr th:nth-child(2),
+        .lfciath-cc-table tbody tr td:nth-child(2) {
+            display: none;
+        }
+        /* Tighten action buttons so they don't overflow */
+        .lfciath-cc-table tbody tr td:last-child .lfciath-cc-btn-sm {
+            display: inline-block;
+            padding: 3px 6px;
+            font-size: 11px;
+        }
+    }
+    </style>
+
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <a href="<?php echo esc_url( add_query_arg( 'view', 'create-activity', $base_url ) ); ?>" class="lfciath-cc-btn lfciath-cc-btn-primary">+ เพิ่มกิจกรรม</a>
+        <span style="color:#888888;font-size:13px;">ทั้งหมด <?php echo esc_html( count( $posts ) ); ?> รายการ</span>
+    </div>
+
+    <div class="lfciath-cc-card" style="padding:0;overflow:hidden;">
+        <table class="lfciath-cc-table">
+            <thead>
+                <tr>
+                    <th>ชื่อกิจกรรม</th>
+                    <th>ประเภท</th>
+                    <th>วันที่</th>
+                    <th>เวลา</th>
+                    <th>สถานที่</th>
+                    <th>สถานะ</th>
+                    <th style="width:120px;">จัดการ</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php if ( ! empty( $posts ) ) : foreach ( $posts as $p ) :
+                $pid        = $p->ID;
+                $act_date     = get_post_meta( $pid, 'activity_date',       true );
+                $act_date_end = get_post_meta( $pid, 'activity_date_end',   true );
+                $time_start   = get_post_meta( $pid, 'activity_time_start', true );
+                $time_end   = get_post_meta( $pid, 'activity_time_end',   true );
+                $act_type   = get_post_meta( $pid, 'activity_type',       true );
+                $location   = get_post_meta( $pid, 'activity_location',   true );
+                $act_status = get_post_meta( $pid, 'activity_status',     true );
+
+                $type_label  = isset( $activity_types[ $act_type ] ) ? $activity_types[ $act_type ] : $act_type;
+                $status_info = isset( $status_options[ $act_status ] ) ? $status_options[ $act_status ] : array( 'label' => $act_status, 'badge' => 'lfciath-cc-badge-gray' );
+
+                $time_str = '';
+                if ( $time_start && $time_end ) {
+                    $time_str = esc_html( $time_start ) . ' – ' . esc_html( $time_end );
+                } elseif ( $time_start ) {
+                    $time_str = esc_html( $time_start );
+                }
+
+                $del_url = wp_nonce_url(
+                    add_query_arg( array(
+                        'action'        => 'lfciath_cc_delete_activity',
+                        'id'            => $pid,
+                        'redirect_base' => rawurlencode( $base_url ),
+                    ), admin_url( 'admin-post.php' ) ),
+                    'lfciath_cc_delete_activity_' . $pid,
+                    'lfciath_cc_del_activity_nonce'
+                );
+            ?>
+            <tr>
+                <td style="font-weight:600;"><?php echo esc_html( $p->post_title ); ?></td>
+                <td><span class="lfciath-cc-badge lfciath-cc-badge-gray"><?php echo esc_html( $type_label ); ?></span></td>
+                <td style="font-size:12px;white-space:nowrap;">
+                    <?php
+                    if ( $act_date_end && $act_date_end !== $act_date ) {
+                        // แสดงช่วง: 06/04 - 08/04
+                        $d1 = $act_date     ? date( 'd/m', strtotime( $act_date ) )     : '';
+                        $d2 = $act_date_end ? date( 'd/m', strtotime( $act_date_end ) ) : '';
+                        echo esc_html( $d1 . ' – ' . $d2 );
+                    } else {
+                        echo esc_html( $act_date );
+                    }
+                    ?>
+                </td>
+                <td style="font-size:12px;white-space:nowrap;"><?php echo $time_str; ?></td>
+                <td style="font-size:12px;color:#555555;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?php echo esc_html( $location ); ?></td>
+                <td><span class="lfciath-cc-badge <?php echo esc_attr( $status_info['badge'] ); ?>"><?php echo esc_html( $status_info['label'] ); ?></span></td>
+                <td>
+                    <a href="<?php echo esc_url( add_query_arg( array( 'view' => 'edit-activity', 'id' => $pid ), $base_url ) ); ?>" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm">แก้ไข</a>
+                    <a href="<?php echo esc_url( $del_url ); ?>" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm lfciath-cc-delete-link" style="margin-left:4px;">ลบ</a>
+                </td>
+            </tr>
+            <?php endforeach; else : ?>
+            <tr><td colspan="7" style="text-align:center;padding:40px;color:#aaaaaa;">ยังไม่มีกิจกรรม — <a href="<?php echo esc_url( add_query_arg( 'view', 'create-activity', $base_url ) ); ?>">เพิ่มกิจกรรม</a></td></tr>
+            <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+}
+
+// ========================================
+// Form Handler: บันทึกกิจกรรม
+// ========================================
+function lfciath_handle_cc_save_activity() {
+    if ( ! isset( $_POST['lfciath_cc_activity_nonce'] ) ||
+         ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['lfciath_cc_activity_nonce'] ) ), 'lfciath_cc_save_activity' ) ) {
+        wp_die( 'Nonce ไม่ถูกต้อง' );
+    }
+    if ( ! current_user_can( 'edit_posts' ) ) {
+        wp_die( 'ไม่มีสิทธิ์' );
+    }
+
+    $redirect_base = isset( $_POST['lfciath_redirect_base'] ) ? esc_url_raw( wp_unslash( $_POST['lfciath_redirect_base'] ) ) : home_url();
+    $post_id       = isset( $_POST['lfciath_activity_post_id'] ) ? intval( $_POST['lfciath_activity_post_id'] ) : 0;
+
+    $title       = isset( $_POST['activity_title'] )       ? sanitize_text_field( wp_unslash( $_POST['activity_title'] ) )           : '';
+    $date        = isset( $_POST['activity_date'] )        ? sanitize_text_field( wp_unslash( $_POST['activity_date'] ) )            : '';
+    $date_end    = isset( $_POST['activity_date_end'] )    ? sanitize_text_field( wp_unslash( $_POST['activity_date_end'] ) )        : '';
+    $time_start  = isset( $_POST['activity_time_start'] )  ? sanitize_text_field( wp_unslash( $_POST['activity_time_start'] ) )      : '';
+    $time_end    = isset( $_POST['activity_time_end'] )    ? sanitize_text_field( wp_unslash( $_POST['activity_time_end'] ) )        : '';
+    $type        = isset( $_POST['activity_type'] )        ? sanitize_text_field( wp_unslash( $_POST['activity_type'] ) )            : 'other';
+    $age_group   = isset( $_POST['activity_age_group'] )   ? sanitize_text_field( wp_unslash( $_POST['activity_age_group'] ) )       : '';
+    $location    = isset( $_POST['activity_location'] )    ? sanitize_text_field( wp_unslash( $_POST['activity_location'] ) )        : '';
+    $description = isset( $_POST['activity_description'] ) ? sanitize_textarea_field( wp_unslash( $_POST['activity_description'] ) ) : '';
+    $status      = isset( $_POST['activity_status'] )      ? sanitize_text_field( wp_unslash( $_POST['activity_status'] ) )          : 'upcoming';
+    $image_id       = isset( $_POST['activity_image_id'] )    ? intval( $_POST['activity_image_id'] )                                       : 0;
+    $register_url   = isset( $_POST['activity_register_url'] ) ? esc_url_raw( wp_unslash( $_POST['activity_register_url'] ) )               : '';
+
+    $allowed_types    = array( 'training', 'match', 'event', 'camp', 'other' );
+    $allowed_statuses = array( 'upcoming', 'ongoing', 'completed', 'cancelled' );
+
+    if ( ! in_array( $type,   $allowed_types,    true ) ) { $type   = 'other'; }
+    if ( ! in_array( $status, $allowed_statuses, true ) ) { $status = 'upcoming'; }
+
+    $post_data = array(
+        'post_title'  => $title,
+        'post_type'   => 'lfciath_activity',
+        'post_status' => 'publish',
+    );
+
+    if ( $post_id > 0 ) {
+        $post_data['ID'] = $post_id;
+        $result          = wp_update_post( $post_data, true );
+        $msg             = is_wp_error( $result ) ? 'activity_error' : 'activity_updated';
+    } else {
+        $result  = wp_insert_post( $post_data, true );
+        $post_id = is_wp_error( $result ) ? 0 : $result;
+        $msg     = is_wp_error( $result ) ? 'activity_error' : 'activity_saved';
+    }
+
+    if ( $post_id > 0 && ! is_wp_error( $result ) ) {
+        update_post_meta( $post_id, 'activity_date',        $date );
+        if ( $date_end && $date_end > $date ) {
+            update_post_meta( $post_id, 'activity_date_end', $date_end );
+        } else {
+            delete_post_meta( $post_id, 'activity_date_end' );
+        }
+        update_post_meta( $post_id, 'activity_time_start',  $time_start );
+        update_post_meta( $post_id, 'activity_time_end',    $time_end );
+        update_post_meta( $post_id, 'activity_type',        $type );
+        update_post_meta( $post_id, 'activity_age_group',   $age_group );
+        update_post_meta( $post_id, 'activity_location',    $location );
+        update_post_meta( $post_id, 'activity_description',  $description );
+        update_post_meta( $post_id, 'activity_status',       $status );
+        update_post_meta( $post_id, 'activity_register_url', $register_url );
+        if ( $image_id > 0 ) {
+            update_post_meta( $post_id, 'activity_image_id', $image_id );
+        } else {
+            delete_post_meta( $post_id, 'activity_image_id' );
+        }
+    }
+
+    wp_redirect( add_query_arg( array( 'view' => 'list-activities', 'msg' => $msg ), $redirect_base ) );
+    exit;
+}
+add_action( 'admin_post_lfciath_cc_save_activity', 'lfciath_handle_cc_save_activity' );
+
+// ========================================
+// Form Handler: ลบกิจกรรม
+// ========================================
+function lfciath_handle_cc_delete_activity() {
+    $pid = isset( $_GET['id'] ) ? intval( $_GET['id'] ) : 0;
+    if ( ! wp_verify_nonce(
+        isset( $_GET['lfciath_cc_del_activity_nonce'] ) ? sanitize_text_field( wp_unslash( $_GET['lfciath_cc_del_activity_nonce'] ) ) : '',
+        'lfciath_cc_delete_activity_' . $pid
+    ) ) {
+        wp_die( 'Nonce ไม่ถูกต้อง' );
+    }
+    if ( ! current_user_can( 'edit_posts' ) ) {
+        wp_die( 'ไม่มีสิทธิ์' );
+    }
+
+    $redirect_base = isset( $_GET['redirect_base'] ) ? esc_url_raw( rawurldecode( wp_unslash( $_GET['redirect_base'] ) ) ) : home_url();
+
+    if ( $pid > 0 ) {
+        $post = get_post( $pid );
+        if ( $post && 'lfciath_activity' === $post->post_type ) {
+            wp_delete_post( $pid, true );
+            $msg = 'activity_deleted';
+        } else {
+            $msg = 'activity_not_found';
+        }
+    } else {
+        $msg = 'activity_error';
+    }
+
+    wp_redirect( add_query_arg( array( 'view' => 'list-activities', 'msg' => $msg ), $redirect_base ) );
+    exit;
+}
+add_action( 'admin_post_lfciath_cc_delete_activity', 'lfciath_handle_cc_delete_activity' );
 add_action( 'admin_post_lfciath_cc_delete_fixture', 'lfciath_handle_cc_delete_fixture' );

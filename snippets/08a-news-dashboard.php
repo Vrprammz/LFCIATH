@@ -7,7 +7,7 @@
  * 2. สร้าง WP Page → ใส่ shortcode [lfciath_command_center]
  * 3. เฉพาะ admin/editor เข้าได้ (คนอื่น redirect ไป login)
  * ============================================================
- * @version  V.11
+ * @version  V.12
  * @updated  2026-03-24
  */
 
@@ -101,9 +101,17 @@ function lfciath_cc_menu() {
             ),
         ),
         array(
+            'group' => 'ตารางกิจกรรม',
+            'items' => array(
+                array( 'slug' => 'create-activity', 'icon' => 'dashicons-plus-alt',  'label' => 'เพิ่มกิจกรรม' ),
+                array( 'slug' => 'list-activities',  'icon' => 'dashicons-calendar',   'label' => 'กิจกรรมทั้งหมด' ),
+            ),
+        ),
+        array(
             'group' => 'โปรโมท',
             'items' => array(
-                array( 'slug' => 'banners', 'icon' => 'dashicons-format-image', 'label' => 'จัดการแบนเนอร์' ),
+                array( 'slug' => 'banners',         'icon' => 'dashicons-format-image', 'label' => 'แบนเนอร์การ์ด' ),
+                array( 'slug' => 'archive-banner',  'icon' => 'dashicons-align-wide',   'label' => 'แบนเนอร์ยาว' ),
             ),
         ),
         array(
@@ -130,9 +138,13 @@ function lfciath_cc_view_title( $view ) {
         'create-fixture' => 'เพิ่มนัดต่อไป',
         'edit-fixture'   => 'แก้ไขนัดต่อไป',
         'list-fixtures'  => 'ตารางนัดต่อไป',
-        'banners'        => 'จัดการแบนเนอร์',
-        'edit-banner'    => 'แก้ไขแบนเนอร์',
-        'settings'       => 'ตั้งค่าทั่วไป',
+        'banners'          => 'แบนเนอร์การ์ด',
+        'edit-banner'      => 'แก้ไขแบนเนอร์',
+        'archive-banner'   => 'แบนเนอร์ยาว',
+        'create-activity'  => 'เพิ่มกิจกรรม',
+        'edit-activity'    => 'แก้ไขกิจกรรม',
+        'list-activities'  => 'กิจกรรมทั้งหมด',
+        'settings'         => 'ตั้งค่าทั่วไป',
     );
     return isset( $map[ $view ] ) ? $map[ $view ] : 'Dashboard';
 }
@@ -201,11 +213,19 @@ function lfciath_cc_render( $view, $base_url ) {
                         'match_deleted' => 'ลบผลแข่งขันแล้ว',
                         'banner_saved'  => 'บันทึกแบนเนอร์สำเร็จ!',
                         'banner_deleted'=> 'ลบแบนเนอร์แล้ว',
-                        'no_title'      => 'กรุณากรอกหัวข้อข่าว',
-                        'error'         => 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+                        'no_title'         => 'กรุณากรอกหัวข้อข่าว',
+                        'error'            => 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+                        'ab_saved'         => 'บันทึกแบนเนอร์ยาวสำเร็จ!',
+                        'activity_saved'   => 'เพิ่มกิจกรรมสำเร็จ!',
+                        'activity_updated' => 'อัปเดตกิจกรรมสำเร็จ!',
+                        'activity_deleted' => 'ลบกิจกรรมแล้ว',
+                        'activity_error'   => 'เกิดข้อผิดพลาด กรุณาลองใหม่',
+                        'activity_not_found' => 'ไม่พบกิจกรรมนี้',
+                        'fixture_deleted'  => 'ลบนัดต่อไปแล้ว',
+                        'fixture_saved'    => 'บันทึกนัดต่อไปสำเร็จ!',
                     );
                     $mk = sanitize_text_field( wp_unslash( $_GET['msg'] ) );
-                    $is_err = in_array( $mk, array( 'no_title', 'error' ), true );
+                    $is_err = in_array( $mk, array( 'no_title', 'error', 'activity_error', 'activity_not_found' ), true );
                     $mtxt = isset( $msgs[ $mk ] ) ? $msgs[ $mk ] : $mk;
                     echo '<div class="lfciath-cc-notice ' . ( $is_err ? 'lfciath-cc-notice-error' : 'lfciath-cc-notice-success' ) . '">' . esc_html( $mtxt ) . '</div>';
                 }
@@ -252,6 +272,22 @@ function lfciath_cc_render( $view, $base_url ) {
                     case 'edit-banner':
                         if ( function_exists( 'lfciath_cc_view_banners' ) ) {
                             lfciath_cc_view_banners( $cc_url, $view );
+                        }
+                        break;
+                    case 'archive-banner':
+                        if ( function_exists( 'lfciath_cc_view_archive_banner' ) ) {
+                            lfciath_cc_view_archive_banner( $cc_url );
+                        }
+                        break;
+                    case 'create-activity':
+                    case 'edit-activity':
+                        if ( function_exists( 'lfciath_cc_view_activity_form' ) ) {
+                            lfciath_cc_view_activity_form( $cc_url, $view );
+                        }
+                        break;
+                    case 'list-activities':
+                        if ( function_exists( 'lfciath_cc_view_list_activities' ) ) {
+                            lfciath_cc_view_list_activities( $cc_url );
                         }
                         break;
                     case 'settings':
