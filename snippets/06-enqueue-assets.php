@@ -226,6 +226,33 @@ function lfciath_add_btn_style() {
 add_action( 'wp_head', 'lfciath_add_btn_style' );
 
 // ========================================
+// Open Graph meta tags สำหรับ Facebook / LINE / Social share
+// ========================================
+function lfciath_og_meta_tags() {
+    if ( ! is_singular( 'lfciath_news' ) ) {
+        return;
+    }
+    $post_id  = get_the_ID();
+    $title    = get_the_title( $post_id );
+    $subtitle = get_field( 'news_subtitle', $post_id );
+    $hero     = get_field( 'news_hero_image', $post_id );
+    $hero_url = is_array( $hero ) ? $hero['url'] : ( is_numeric( $hero ) ? wp_get_attachment_url( $hero ) : '' );
+    $url      = get_permalink( $post_id );
+
+    echo '<meta property="og:type"        content="article" />' . "\n";
+    echo '<meta property="og:title"       content="' . esc_attr( $title ) . '" />' . "\n";
+    if ( $subtitle ) {
+        echo '<meta property="og:description" content="' . esc_attr( $subtitle ) . '" />' . "\n";
+    }
+    if ( $hero_url ) {
+        echo '<meta property="og:image"       content="' . esc_url( $hero_url ) . '" />' . "\n";
+    }
+    echo '<meta property="og:url"         content="' . esc_url( $url ) . '" />' . "\n";
+    echo '<meta property="og:site_name"   content="LFC International Academy Thailand" />' . "\n";
+}
+add_action( 'wp_head', 'lfciath_og_meta_tags', 5 );
+
+// ========================================
 // Site Header สำหรับหน้าข่าว (เหมือน Elementor header ของเว็บ)
 // ========================================
 function lfciath_render_site_header() {
