@@ -105,20 +105,13 @@ function lfciath_render_single_news_page() {
 
     <div class="lfciath-single-news">
 
-        <!-- Hero Banner -->
+        <!-- Hero Banner: Image + Red Title Bar -->
         <?php if ( $hero_url ) : ?>
-        <div class="lfciath-news-hero" style="background-image: url('<?php echo esc_url( $hero_url ); ?>');">
-            <div class="lfciath-news-hero-overlay" style="background-color: <?php echo esc_attr( $overlay_color ); ?>;">
-                <div class="lfciath-news-hero-content">
-                    <h1 class="lfciath-news-title"><?php echo esc_html( get_the_title() ); ?></h1>
-                    <?php if ( $subtitle ) : ?>
-                        <p class="lfciath-news-subtitle"><?php echo esc_html( $subtitle ); ?></p>
-                    <?php endif; ?>
-                </div>
-            </div>
+        <div class="lfciath-news-hero">
+            <img class="lfciath-news-hero-img" src="<?php echo esc_url( $hero_url ); ?>" alt="<?php echo esc_attr( get_the_title() ); ?>">
         </div>
-        <?php else : ?>
-        <div class="lfciath-news-hero-simple" style="background-color: <?php echo esc_attr( $overlay_color ); ?>;">
+        <?php endif; ?>
+        <div class="lfciath-news-hero-bar">
             <div class="lfciath-news-hero-content">
                 <h1 class="lfciath-news-title"><?php echo esc_html( get_the_title() ); ?></h1>
                 <?php if ( $subtitle ) : ?>
@@ -126,7 +119,6 @@ function lfciath_render_single_news_page() {
                 <?php endif; ?>
             </div>
         </div>
-        <?php endif; ?>
 
         <!-- Meta Info & Social Share -->
         <div class="lfciath-news-meta-wrapper">
