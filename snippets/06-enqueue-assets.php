@@ -9,8 +9,8 @@
  *   1. ใส่ผ่าน snippet นี้ (โหลดจากไฟล์ CSS ใน theme/child-theme)
  *   2. ใส่ใน Elementor > Custom CSS หรือ Customizer > Additional CSS
  * ============================================================
- * @version  V.12
- * @updated  2026-03-24
+ * @version  V.13
+ * @updated  2026-04-07
  */
 
 function lfciath_enqueue_news_assets() {
@@ -151,10 +151,13 @@ function lfciath_news_breadcrumb() {
         return;
     }
 
+    $bc_home = function_exists( 'lfciath_t' ) ? lfciath_t( 'home' ) : 'หน้าแรก';
+    $bc_news = function_exists( 'lfciath_t' ) ? lfciath_t( 'news' ) : 'ข่าวสาร';
+
     $output = '<nav class="lfciath-breadcrumb" aria-label="breadcrumb">';
-    $output .= '<a href="' . esc_url( home_url( '/' ) ) . '">หน้าแรก</a>';
+    $output .= '<a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html( $bc_home ) . '</a>';
     $output .= ' <span class="lfciath-breadcrumb-sep">/</span> ';
-    $output .= '<a href="' . esc_url( get_post_type_archive_link( 'lfciath_news' ) ) . '">ข่าวสาร</a>';
+    $output .= '<a href="' . esc_url( get_post_type_archive_link( 'lfciath_news' ) ) . '">' . esc_html( $bc_news ) . '</a>';
 
     if ( is_singular( 'lfciath_news' ) ) {
         $categories = get_the_terms( get_the_ID(), 'news_category' );
@@ -226,52 +229,71 @@ function lfciath_add_btn_style() {
 add_action( 'wp_head', 'lfciath_add_btn_style' );
 
 // ========================================
-// Open Graph — override Yoast SEO ให้แสดง title/subtitle เต็ม
+// Open Graph meta tags — standalone (ไม่ต้องพึ่ง Yoast)
 // ========================================
-
-// og:title — ใช้หัวข้อข่าวเต็มไม่ตัด
-add_filter( 'wpseo_opengraph_title', function( $title ) {
-    if ( is_singular( 'lfciath_news' ) ) {
-        return get_the_title();
+function lfciath_output_og_meta() {
+    // รองรับ single news, archive, taxonomy
+    if ( ! is_singular( 'lfciath_news' ) && ! is_post_type_archive( 'lfciath_news' ) && ! is_tax( 'news_category' ) ) {
+        return;
     }
-    return $title;
-} );
 
-// og:description — ใช้ subtitle (คำบรรยายรอง) เต็ม
-add_filter( 'wpseo_opengraph_desc', function( $desc ) {
-    if ( is_singular( 'lfciath_news' ) ) {
-        $subtitle = get_field( 'news_subtitle', get_the_ID() );
-        return $subtitle ?: $desc;
-    }
-    return $desc;
-} );
+    $site_name = 'LFC International Academy Thailand';
 
-// og:image — ใช้ hero image
-add_filter( 'wpseo_opengraph_image', function( $image ) {
     if ( is_singular( 'lfciath_news' ) ) {
-        $hero = get_field( 'news_hero_image', get_the_ID() );
-        $url  = is_array( $hero ) ? $hero['url'] : ( is_numeric( $hero ) ? wp_get_attachment_url( $hero ) : '' );
-        if ( $url ) {
-            return $url;
+        $post_id   = get_the_ID();
+        $title     = get_the_title( $post_id );
+        $desc      = get_field( 'news_subtitle', $post_id ) ?: wp_trim_words( get_the_excerpt(), 30, '...' );
+        $url       = get_permalink( $post_id );
+        $hero      = get_field( 'news_hero_image', $post_id );
+        $image_url = '';
+        $image_w   = 1200;
+        $image_h   = 630;
+        if ( is_array( $hero ) && ! empty( $hero['url'] ) ) {
+            $image_url = $hero['url'];
+            $image_w   = $hero['width'] ?? 1200;
+            $image_h   = $hero['height'] ?? 630;
+        } elseif ( has_post_thumbnail( $post_id ) ) {
+            $image_url = get_the_post_thumbnail_url( $post_id, 'full' );
         }
+        $type = 'article';
+    } elseif ( is_post_type_archive( 'lfciath_news' ) ) {
+        $title     = 'ข่าวสารและกิจกรรม — LFC International Academy Thailand';
+        $desc      = 'ข่าวสารล่าสุดจาก Liverpool FC International Academy Thailand';
+        $url       = get_post_type_archive_link( 'lfciath_news' );
+        $image_url = '';
+        $type      = 'website';
+    } elseif ( is_tax( 'news_category' ) ) {
+        $term      = get_queried_object();
+        $title     = $term->name . ' — ข่าวสาร';
+        $desc      = $term->description ?: 'ข่าว ' . $term->name;
+        $url       = get_term_link( $term );
+        $image_url = '';
+        $type      = 'website';
     }
-    return $image;
-} );
 
-// Twitter card — title + description เต็ม
-add_filter( 'wpseo_twitter_title', function( $title ) {
-    if ( is_singular( 'lfciath_news' ) ) {
-        return get_the_title();
+    // OG tags
+    echo '<meta property="og:type" content="' . esc_attr( $type ) . '">' . "\n";
+    echo '<meta property="og:title" content="' . esc_attr( $title ) . '">' . "\n";
+    echo '<meta property="og:description" content="' . esc_attr( $desc ) . '">' . "\n";
+    echo '<meta property="og:url" content="' . esc_url( $url ) . '">' . "\n";
+    echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '">' . "\n";
+    $og_lang = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
+    echo '<meta property="og:locale" content="' . ( $og_lang === 'en' ? 'en_US' : 'th_TH' ) . '">' . "\n";
+    if ( ! empty( $image_url ) ) {
+        echo '<meta property="og:image" content="' . esc_url( $image_url ) . '">' . "\n";
+        echo '<meta property="og:image:width" content="' . esc_attr( $image_w ) . '">' . "\n";
+        echo '<meta property="og:image:height" content="' . esc_attr( $image_h ) . '">' . "\n";
     }
-    return $title;
-} );
-add_filter( 'wpseo_twitter_description', function( $desc ) {
-    if ( is_singular( 'lfciath_news' ) ) {
-        $subtitle = get_field( 'news_subtitle', get_the_ID() );
-        return $subtitle ?: $desc;
+
+    // Twitter Card
+    echo '<meta name="twitter:card" content="summary_large_image">' . "\n";
+    echo '<meta name="twitter:title" content="' . esc_attr( $title ) . '">' . "\n";
+    echo '<meta name="twitter:description" content="' . esc_attr( $desc ) . '">' . "\n";
+    if ( ! empty( $image_url ) ) {
+        echo '<meta name="twitter:image" content="' . esc_url( $image_url ) . '">' . "\n";
     }
-    return $desc;
-} );
+}
+add_action( 'wp_head', 'lfciath_output_og_meta', 1 );
 
 // ========================================
 // Site Header สำหรับหน้าข่าว (เหมือน Elementor header ของเว็บ)
@@ -314,6 +336,18 @@ function lfciath_render_site_header() {
                 <?php foreach ( $menu_items as $label => $url ) : ?>
                     <a href="<?php echo esc_url( $url ); ?>" class="lfciath-header-nav-link"><?php echo esc_html( $label ); ?></a>
                 <?php endforeach; ?>
+                <?php
+                $current_lang = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
+                $switch_lang  = ( $current_lang === 'th' ) ? 'en' : 'th';
+                $switch_label = ( $current_lang === 'th' ) ? 'EN' : 'TH';
+                $switch_url   = '#';
+                if ( function_exists( 'lfciath_get_news_url' ) && is_singular( 'lfciath_news' ) ) {
+                    $switch_url = lfciath_get_news_url( get_the_ID(), $switch_lang );
+                } elseif ( function_exists( 'lfciath_get_archive_url' ) && ( is_post_type_archive( 'lfciath_news' ) || is_tax( 'news_category' ) ) ) {
+                    $switch_url = lfciath_get_archive_url( $switch_lang );
+                }
+                ?>
+                <a href="<?php echo esc_url( $switch_url ); ?>" class="lfciath-lang-switch"><?php echo esc_html( $switch_label ); ?></a>
             </nav>
         </div>
     </header>
@@ -405,6 +439,12 @@ function lfciath_get_news_css() {
 #lfciath-site-header.scrolled .lfciath-header-nav-link:visited,
 #lfciath-site-header.scrolled .lfciath-header-nav-link:active { color: #1A1A1A !important; }
 #lfciath-site-header.scrolled .lfciath-header-nav-link:hover { color: #C8102E !important; }
+
+/* Language Switch */
+.lfciath-lang-switch { display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; background: rgba(255,255,255,0.15); color: #fff; font-size: 12px; font-weight: 700; border-radius: 4px; text-decoration: none; letter-spacing: 1px; transition: var(--lfc-transition); border: 1px solid rgba(255,255,255,0.3); font-family: var(--lfc-font-en); }
+.lfciath-lang-switch:hover { background: #fff; color: #C8102E; text-decoration: none; }
+.lfciath-site-header.scrolled .lfciath-lang-switch { color: #333; border-color: #ddd; background: transparent; }
+.lfciath-site-header.scrolled .lfciath-lang-switch:hover { background: #C8102E; color: #fff; border-color: #C8102E; }
 
 /* Hamburger mobile */
 .lfciath-header-hamburger {

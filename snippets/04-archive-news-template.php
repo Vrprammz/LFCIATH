@@ -10,9 +10,27 @@
  * ============================================================
  * ใช้ template_include เพื่อ render หน้าเต็ม (ทำงานกับทุก theme รวม Elementor Pro)
  * ============================================================
- * @version  V.12
- * @updated  2026-03-24
+ * @version  V.13
+ * @updated  2026-04-07
  */
+
+// เพิ่ม translation keys ที่ใช้ใน archive template
+add_filter( 'lfciath_i18n_translations', function( $translations ) {
+    $extra = array(
+        'next_match'      => array( 'th' => 'นัดต่อไป',           'en' => 'Next Match' ),
+        'promotion'       => array( 'th' => 'โปรโมชั่น',          'en' => 'Promotion' ),
+        'latest_result'   => array( 'th' => 'ผลล่าสุด',           'en' => 'Latest Result' ),
+        'match_results'   => array( 'th' => 'ผลการแข่งขันล่าสุด',  'en' => 'Recent Match Results' ),
+        'match_table'     => array( 'th' => 'ตารางการแข่งขัน',     'en' => 'Match Schedule' ),
+        'win'             => array( 'th' => 'ชนะ',   'en' => 'Win' ),
+        'loss'            => array( 'th' => 'แพ้',    'en' => 'Loss' ),
+        'draw'            => array( 'th' => 'เสมอ',   'en' => 'Draw' ),
+        'news_count'      => array( 'th' => 'ข่าว',   'en' => 'News' ),
+        'cat_count'       => array( 'th' => 'หมวด',   'en' => 'Categories' ),
+        'updated_at'      => array( 'th' => 'อัปเดต', 'en' => 'Updated' ),
+    );
+    return array_merge( $translations, $extra );
+});
 
 // Override archive template — render full page พร้อม header/footer ของเรา
 function lfciath_news_archive_template( $template ) {
@@ -26,6 +44,8 @@ add_filter( 'template_include', 'lfciath_news_archive_template' );
 
 // Render หน้า archive แบบเต็มพร้อม header/footer
 function lfciath_render_full_archive_page() {
+    $lang = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
+
     $archive_html = lfciath_build_news_archive( array(
         'posts_per_page' => 9,
         'category'       => '',
@@ -36,12 +56,14 @@ function lfciath_render_full_archive_page() {
 
     $css = function_exists( 'lfciath_get_news_css' ) ? lfciath_get_news_css() : '';
 
+    $page_title = function_exists( 'lfciath_t' ) ? lfciath_t( 'news_title' ) : 'ข่าวสารและกิจกรรม';
+
     ?><!DOCTYPE html>
-<html <?php language_attributes(); ?>>
+<html lang="<?php echo $lang === 'en' ? 'en' : 'th'; ?>">
 <head>
     <meta charset="<?php bloginfo( 'charset' ); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ข่าวสารและกิจกรรม - <?php bloginfo( 'name' ); ?></title>
+    <title><?php echo esc_html( $page_title ); ?> - <?php bloginfo( 'name' ); ?></title>
     <?php wp_head(); ?>
     <style><?php echo $css; ?></style>
 </head>
@@ -100,6 +122,7 @@ add_shortcode( 'lfciath_news_archive', 'lfciath_news_archive_shortcode' );
 
 // Build the archive HTML
 function lfciath_build_news_archive( $atts ) {
+    $lang  = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
     $paged = get_query_var( 'paged' ) ? get_query_var( 'paged' ) : 1;
 
     // Query args
@@ -166,28 +189,29 @@ function lfciath_build_news_archive( $atts ) {
         <div class="lfciath-app-bar">
             <div class="lfciath-app-bar-left">
                 <span class="lfciath-app-bar-dot"></span>
-                <h1 class="lfciath-app-bar-title">ข่าวสารและกิจกรรม</h1>
+                <h1 class="lfciath-app-bar-title"><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'news_title' ) : 'ข่าวสารและกิจกรรม' ); ?></h1>
             </div>
             <div class="lfciath-app-bar-right">
-                <span class="lfciath-app-bar-stat"><?php echo esc_html( $total_count ); ?> ข่าว</span>
+                <span class="lfciath-app-bar-stat"><?php echo esc_html( $total_count ); ?> <?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'news_count' ) : 'ข่าว' ); ?></span>
                 <span class="lfciath-app-bar-divider"></span>
-                <span class="lfciath-app-bar-stat"><?php echo esc_html( $cat_count ); ?> หมวด</span>
+                <span class="lfciath-app-bar-stat"><?php echo esc_html( $cat_count ); ?> <?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'cat_count' ) : 'หมวด' ); ?></span>
                 <span class="lfciath-app-bar-divider"></span>
-                <span class="lfciath-app-bar-stat">อัปเดต <?php echo esc_html( $latest_date ); ?></span>
+                <span class="lfciath-app-bar-stat"><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'updated_at' ) : 'อัปเดต' ); ?> <?php echo esc_html( $latest_date ); ?></span>
             </div>
         </div>
 
         <!-- Category Tabs -->
         <?php if ( $atts['show_filter'] === 'yes' && $categories && ! is_wp_error( $categories ) ) : ?>
         <div class="lfciath-tab-bar">
-            <a href="<?php echo esc_url( get_post_type_archive_link( 'lfciath_news' ) ); ?>"
+            <?php $archive_base_url = function_exists( 'lfciath_get_archive_url' ) ? lfciath_get_archive_url( $lang ) : get_post_type_archive_link( 'lfciath_news' ); ?>
+            <a href="<?php echo esc_url( $archive_base_url ); ?>"
                class="lfciath-tab <?php echo empty( $active_cat ) ? 'active' : ''; ?>">
-                ทั้งหมด
+                <?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'all' ) : 'ทั้งหมด' ); ?>
             </a>
             <?php foreach ( $categories as $cat ) : ?>
-                <a href="<?php echo esc_url( add_query_arg( 'news_cat', $cat->slug, get_post_type_archive_link( 'lfciath_news' ) ) ); ?>"
+                <a href="<?php echo esc_url( add_query_arg( 'news_cat', $cat->slug, $archive_base_url ) ); ?>"
                    class="lfciath-tab <?php echo ( $active_cat === $cat->slug ) ? 'active' : ''; ?>">
-                    <?php echo esc_html( $cat->name ); ?>
+                    <?php echo esc_html( function_exists( 'lfciath_get_cat_name' ) ? lfciath_get_cat_name( $cat, $lang ) : $cat->name ); ?>
                     <span class="lfciath-tab-count"><?php echo esc_html( $cat->count ); ?></span>
                 </a>
             <?php endforeach; ?>
@@ -260,19 +284,23 @@ function lfciath_build_news_archive( $atts ) {
                 $feat_cats = get_the_terms( get_the_ID(), 'news_category' );
                 $feat_date = get_field( 'news_display_date' ) ?: get_the_date( 'd/m/y' );
             ?>
+            <?php
+                $feat_url   = function_exists( 'lfciath_get_news_url' ) ? lfciath_get_news_url( get_the_ID(), $lang ) : get_permalink();
+                $feat_title = ( $lang === 'en' && get_field( 'news_title_en', get_the_ID() ) ) ? get_field( 'news_title_en', get_the_ID() ) : get_the_title();
+            ?>
             <div class="lfciath-news-featured">
-                <a href="<?php the_permalink(); ?>" class="lfciath-featured-link">
+                <a href="<?php echo esc_url( $feat_url ); ?>" class="lfciath-featured-link">
                     <?php if ( $feat_img ) : ?>
                         <div class="lfciath-featured-image">
                             <img src="<?php echo esc_url( $feat_img ); ?>" alt="<?php the_title_attribute(); ?>" loading="lazy" />
                         </div>
                     <?php endif; ?>
                     <div class="lfciath-featured-overlay">
-                        <span class="lfciath-featured-badge">ข่าวเด่น</span>
+                        <span class="lfciath-featured-badge"><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'featured' ) : 'ข่าวเด่น' ); ?></span>
                         <?php if ( $feat_cats && ! is_wp_error( $feat_cats ) ) : ?>
-                            <span class="lfciath-card-cat"><?php echo esc_html( $feat_cats[0]->name ); ?></span>
+                            <span class="lfciath-card-cat"><?php echo esc_html( function_exists( 'lfciath_get_cat_name' ) ? lfciath_get_cat_name( $feat_cats[0], $lang ) : $feat_cats[0]->name ); ?></span>
                         <?php endif; ?>
-                        <h2 class="lfciath-featured-title"><?php the_title(); ?></h2>
+                        <h2 class="lfciath-featured-title"><?php echo esc_html( $feat_title ); ?></h2>
                         <p class="lfciath-featured-excerpt"><?php echo wp_trim_words( get_the_excerpt(), 40 ); ?></p>
                         <span class="lfciath-featured-date"><?php echo esc_html( $feat_date ); ?></span>
                     </div>
@@ -291,7 +319,7 @@ function lfciath_build_news_archive( $atts ) {
                 <div class="lfciath-sidebar-widget">
                     <div class="lfciath-sidebar-widget-header" style="background: #2d2d2d;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        นัดต่อไป
+                        <?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'next_match' ) : 'นัดต่อไป' ); ?>
                     </div>
                     <div class="lfciath-sidebar-widget-body">
                         <div class="lfciath-widget-match">
@@ -328,7 +356,7 @@ function lfciath_build_news_archive( $atts ) {
                 <div class="lfciath-sidebar-widget">
                     <div class="lfciath-sidebar-widget-header" style="background: var(--lfc-red, #C8102E);">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                        โปรโมชั่น
+                        <?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'promotion' ) : 'โปรโมชั่น' ); ?>
                     </div>
                     <div class="lfciath-sidebar-widget-body lfciath-widget-banner-body">
                         <div class="lfciath-banner-item">
@@ -349,12 +377,16 @@ function lfciath_build_news_archive( $atts ) {
                     $lr_opp_logo = ! empty( $latest_result['opponent_logo'] ) ? wp_get_attachment_image_url( $latest_result['opponent_logo'], 'thumbnail' ) : '';
                     $lr_r = $latest_result['result'] ?? 'D';
                     $lr_r_class = $lr_r === 'W' ? 'win' : ( $lr_r === 'L' ? 'loss' : 'draw' );
-                    $lr_r_text  = $lr_r === 'W' ? 'ชนะ' : ( $lr_r === 'L' ? 'แพ้' : 'เสมอ' );
+                    $lr_r_text  = $lr_r === 'W'
+                        ? ( function_exists( 'lfciath_t' ) ? lfciath_t( 'win' ) : 'ชนะ' )
+                        : ( $lr_r === 'L'
+                            ? ( function_exists( 'lfciath_t' ) ? lfciath_t( 'loss' ) : 'แพ้' )
+                            : ( function_exists( 'lfciath_t' ) ? lfciath_t( 'draw' ) : 'เสมอ' ) );
                 ?>
                 <div class="lfciath-sidebar-widget lfciath-widget-latest-result">
                     <div class="lfciath-sidebar-widget-header" style="background: #1A1A1A;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        ผลล่าสุด
+                        <?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'latest_result' ) : 'ผลล่าสุด' ); ?>
                     </div>
                     <div class="lfciath-sidebar-widget-body">
                         <div class="lfciath-widget-result-row">
@@ -445,7 +477,7 @@ function lfciath_build_news_archive( $atts ) {
 
         <!-- Section Header: Match Results -->
         <div class="lfciath-section-header">
-            <h2>ตารางการแข่งขัน</h2>
+            <h2><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'match_schedule' ) : 'ตารางการแข่งขันนัดต่อไป' ); ?></h2>
         </div>
 
         <div class="lfciath-match-section">
@@ -453,14 +485,18 @@ function lfciath_build_news_archive( $atts ) {
             <div class="lfciath-match-panel">
                 <div class="lfciath-match-panel-header lfciath-results-header">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    ผลการแข่งขันล่าสุด
+                    <?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'match_results' ) : 'ผลการแข่งขันล่าสุด' ); ?>
                 </div>
                 <div class="lfciath-match-panel-body">
                     <?php foreach ( $recent_matches as $m ) :
                         $opp_logo = ! empty( $m['opponent_logo'] ) ? wp_get_attachment_image_url( $m['opponent_logo'], 'thumbnail' ) : '';
                         $r = $m['result'] ?? 'D';
                         $r_class = $r === 'W' ? 'win' : ( $r === 'L' ? 'loss' : 'draw' );
-                        $r_text  = $r === 'W' ? 'ชนะ' : ( $r === 'L' ? 'แพ้' : 'เสมอ' );
+                        $r_text  = $r === 'W'
+                            ? ( function_exists( 'lfciath_t' ) ? lfciath_t( 'win' ) : 'ชนะ' )
+                            : ( $r === 'L'
+                                ? ( function_exists( 'lfciath_t' ) ? lfciath_t( 'loss' ) : 'แพ้' )
+                                : ( function_exists( 'lfciath_t' ) ? lfciath_t( 'draw' ) : 'เสมอ' ) );
                     ?>
                     <div class="lfciath-match-row lfciath-match-<?php echo esc_attr( $r_class ); ?>">
                         <div class="lfciath-match-date">
@@ -491,7 +527,7 @@ function lfciath_build_news_archive( $atts ) {
             <div class="lfciath-match-panel">
                 <div class="lfciath-match-panel-header lfciath-fixture-header">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    ตารางการแข่งขันนัดต่อไป
+                    <?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'match_schedule' ) : 'ตารางการแข่งขันนัดต่อไป' ); ?>
                 </div>
                 <div class="lfciath-match-panel-body">
                     <?php foreach ( $upcoming as $f ) :
@@ -540,7 +576,7 @@ function lfciath_build_news_archive( $atts ) {
             if ( $act_html ) :
         ?>
         <div class="lfciath-section-header">
-            <h2>ตารางกิจกรรม</h2>
+            <h2><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'activity_schedule' ) : 'ตารางกิจกรรม' ); ?></h2>
         </div>
         <div style="padding: 0 0 20px;">
             <?php echo $act_html; ?>
@@ -555,7 +591,7 @@ function lfciath_build_news_archive( $atts ) {
 
         <!-- Section Header: Latest News -->
         <div class="lfciath-section-header">
-            <h2>ข่าวล่าสุด</h2>
+            <h2><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'latest_news' ) : 'ข่าวล่าสุด' ); ?></h2>
         </div>
 
         <div class="lfciath-news-grid columns-<?php echo esc_attr( $atts['columns'] ); ?>">
@@ -566,8 +602,14 @@ function lfciath_build_news_archive( $atts ) {
                 $card_hero = get_field( 'news_hero_image' );
                 $card_img  = $card_hero ? $card_hero['sizes']['medium_large'] : get_the_post_thumbnail_url( get_the_ID(), 'medium_large' );
                 ?>
+                <?php
+                $card_url   = function_exists( 'lfciath_get_news_url' ) ? lfciath_get_news_url( get_the_ID(), $lang ) : get_permalink();
+                $card_title = ( $lang === 'en' && get_field( 'news_title_en', get_the_ID() ) ) ? get_field( 'news_title_en', get_the_ID() ) : get_the_title();
+                $card_subtitle = function_exists( 'lfciath_get_news_field' ) ? lfciath_get_news_field( 'news_subtitle', get_the_ID(), $lang ) : '';
+                $card_excerpt_text = $card_subtitle ? $card_subtitle : wp_trim_words( get_the_excerpt(), 20 );
+                ?>
                 <article class="lfciath-news-card">
-                    <a href="<?php the_permalink(); ?>" class="lfciath-card-link">
+                    <a href="<?php echo esc_url( $card_url ); ?>" class="lfciath-card-link">
                         <div class="lfciath-card-image">
                             <?php if ( $card_img ) : ?>
                                 <img src="<?php echo esc_url( $card_img ); ?>"
@@ -581,13 +623,13 @@ function lfciath_build_news_archive( $atts ) {
                         </div>
                         <div class="lfciath-card-content">
                             <?php if ( $card_cats && ! is_wp_error( $card_cats ) ) : ?>
-                                <span class="lfciath-card-cat"><?php echo esc_html( $card_cats[0]->name ); ?></span>
+                                <span class="lfciath-card-cat"><?php echo esc_html( function_exists( 'lfciath_get_cat_name' ) ? lfciath_get_cat_name( $card_cats[0], $lang ) : $card_cats[0]->name ); ?></span>
                             <?php endif; ?>
-                            <h3 class="lfciath-card-title"><?php the_title(); ?></h3>
-                            <p class="lfciath-card-excerpt"><?php echo wp_trim_words( get_the_excerpt(), 20 ); ?></p>
+                            <h3 class="lfciath-card-title"><?php echo esc_html( $card_title ); ?></h3>
+                            <p class="lfciath-card-excerpt"><?php echo wp_trim_words( $card_excerpt_text, 20 ); ?></p>
                             <div class="lfciath-card-meta">
                                 <span class="lfciath-card-date"><?php echo esc_html( $card_date ); ?></span>
-                                <span class="lfciath-card-readmore">อ่านต่อ &rarr;</span>
+                                <span class="lfciath-card-readmore"><?php echo function_exists( 'lfciath_t' ) ? lfciath_t( 'read_more' ) : 'อ่านต่อ &rarr;'; ?></span>
                             </div>
                         </div>
                     </a>
@@ -598,13 +640,18 @@ function lfciath_build_news_archive( $atts ) {
         <!-- Pagination -->
         <div class="lfciath-news-pagination">
             <?php
-            echo paginate_links( array(
+            $pagination_base = function_exists( 'lfciath_get_archive_url' ) ? lfciath_get_archive_url( $lang ) : '';
+            $pagination_args = array(
                 'total'     => $query->max_num_pages,
                 'current'   => $paged,
-                'prev_text' => '&laquo; ก่อนหน้า',
-                'next_text' => 'ถัดไป &raquo;',
+                'prev_text' => function_exists( 'lfciath_t' ) ? lfciath_t( 'prev' ) : '&laquo; ก่อนหน้า',
+                'next_text' => function_exists( 'lfciath_t' ) ? lfciath_t( 'next' ) : 'ถัดไป &raquo;',
                 'type'      => 'list',
-            ));
+            );
+            if ( $pagination_base ) {
+                $pagination_args['base'] = trailingslashit( $pagination_base ) . 'page/%#%/';
+            }
+            echo paginate_links( $pagination_args );
             ?>
         </div>
 
@@ -612,7 +659,7 @@ function lfciath_build_news_archive( $atts ) {
 
         <?php else : ?>
         <div class="lfciath-news-empty">
-            <p>ยังไม่มีข่าวสารในขณะนี้</p>
+            <p><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'no_news' ) : 'ยังไม่มีข่าวสารในขณะนี้' ); ?></p>
         </div>
         <?php endif; ?>
 
