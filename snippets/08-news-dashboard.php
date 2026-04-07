@@ -131,6 +131,10 @@ function lfciath_handle_news_save() {
         }
     }
 
+    // Social share image
+    $social_id = isset( $_POST['news_social_image_id'] ) ? intval( $_POST['news_social_image_id'] ) : 0;
+    update_post_meta( $post_id, 'news_social_image', $social_id > 0 ? $social_id : '' );
+
     // Gallery images
     for ( $i = 1; $i <= 10; $i++ ) {
         $gal_key = 'news_gallery_' . $i . '_id';
@@ -186,8 +190,10 @@ function lfciath_news_dashboard_page() {
     $val_author_en   = $edit_post ? get_post_meta( $editing_id, 'news_author_display_en', true ) : '';
 
     // Hero image
-    $val_hero_id  = $edit_post ? get_post_thumbnail_id( $editing_id ) : 0;
-    $val_hero_url = $val_hero_id ? wp_get_attachment_image_url( $val_hero_id, 'medium' ) : '';
+    $val_hero_id    = $edit_post ? get_post_thumbnail_id( $editing_id ) : 0;
+    $val_hero_url   = $val_hero_id ? wp_get_attachment_image_url( $val_hero_id, 'medium' ) : '';
+    $val_social_id  = $edit_post ? get_post_meta( $editing_id, 'news_social_image', true ) : 0;
+    $val_social_url = $val_social_id ? wp_get_attachment_image_url( intval( $val_social_id ), 'medium' ) : '';
 
     // Gallery
     $gallery_data = array();
@@ -302,6 +308,18 @@ function lfciath_news_dashboard_page() {
                         <input type="hidden" name="news_hero_image_id" id="news_hero_image_id" value="<?php echo esc_attr( $val_hero_id ); ?>" />
                         <button type="button" class="button" id="lfciath-hero-upload">เลือกรูป</button>
                         <button type="button" class="button" id="lfciath-hero-remove" style="color:#a00;<?php echo $val_hero_id ? '' : 'display:none;'; ?>">ลบรูป</button>
+                    </div>
+
+                    <!-- ภาพ Social Share (og:image) -->
+                    <div class="lfciath-dash-card" style="border-left:3px solid #1877F2;padding-left:16px;">
+                        <label class="lfciath-dash-label">ภาพ Social Share (Facebook/LINE)</label>
+                        <p style="color:#666;font-size:13px;margin:0 0 10px;">แนะนำขนาด 1200x630px — ใช้แสดงเมื่อแชร์ลิงก์ข่าวบนโซเชียล</p>
+                        <div id="lfciath-social-preview" style="margin-bottom:10px;<?php echo $val_social_url ? '' : 'display:none;'; ?>">
+                            <img id="lfciath-social-img" src="<?php echo esc_url( $val_social_url ); ?>" style="max-width:100%;max-height:160px;border-radius:8px;object-fit:cover;" />
+                        </div>
+                        <input type="hidden" name="news_social_image_id" id="news_social_image_id" value="<?php echo esc_attr( $val_social_id ); ?>" />
+                        <button type="button" class="button" id="lfciath-social-upload">เลือกรูป</button>
+                        <button type="button" class="button" id="lfciath-social-remove" style="color:#a00;<?php echo $val_social_id ? '' : 'display:none;'; ?>">ลบ</button>
                     </div>
 
                     <!-- เนื้อหาข่าว -->
@@ -502,6 +520,32 @@ function lfciath_news_dashboard_page() {
             e.preventDefault();
             $('#news_hero_image_id').val('');
             $('#lfciath-hero-preview').hide();
+            $(this).hide();
+        });
+
+        // Social share image upload
+        $('#lfciath-social-upload').on('click', function(e) {
+            e.preventDefault();
+            var frame = wp.media({
+                title: 'เลือกภาพ Social Share (1200x630)',
+                button: { text: 'ใช้ภาพนี้' },
+                multiple: false,
+                library: { type: 'image' }
+            });
+            frame.on('select', function() {
+                var attachment = frame.state().get('selection').first().toJSON();
+                $('#news_social_image_id').val(attachment.id);
+                var previewUrl = attachment.sizes && attachment.sizes.medium ? attachment.sizes.medium.url : attachment.url;
+                $('#lfciath-social-img').attr('src', previewUrl);
+                $('#lfciath-social-preview').show();
+                $('#lfciath-social-remove').show();
+            });
+            frame.open();
+        });
+        $('#lfciath-social-remove').on('click', function(e) {
+            e.preventDefault();
+            $('#news_social_image_id').val('');
+            $('#lfciath-social-preview').hide();
             $(this).hide();
         });
 
