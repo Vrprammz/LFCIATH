@@ -371,16 +371,16 @@ function lfciath_render_site_header() {
                 } elseif ( function_exists( 'lfciath_get_archive_url' ) && ( is_post_type_archive( 'lfciath_news' ) || is_tax( 'news_category' ) ) ) {
                     $switch_url = lfciath_get_archive_url( $switch_lang );
                 }
-                $th_flag = '&#x1F1F9;&#x1F1ED;';
-                $en_flag = '&#x1F1EC;&#x1F1E7;';
-                $current_flag = ( $current_lang === 'th' ) ? $th_flag : $en_flag;
-                $switch_flag  = ( $current_lang === 'th' ) ? $en_flag : $th_flag;
                 ?>
-                <a href="<?php echo esc_url( $switch_url ); ?>" class="lfciath-lang-switch" title="<?php echo $switch_lang === 'en' ? 'Switch to English' : 'เปลี่ยนเป็นภาษาไทย'; ?>">
-                    <span class="lfciath-lang-current"><?php echo $current_flag; ?></span>
-                    <span class="lfciath-lang-divider">|</span>
-                    <span class="lfciath-lang-switch-to"><?php echo $switch_flag; ?></span>
-                </a>
+                <div class="lfciath-lang-pill">
+                    <?php if ( $current_lang === 'th' ) : ?>
+                        <span class="lfciath-lang-pill-item lfciath-lang-active">TH</span>
+                        <a href="<?php echo esc_url( $switch_url ); ?>" class="lfciath-lang-pill-item lfciath-lang-switch">EN</a>
+                    <?php else : ?>
+                        <a href="<?php echo esc_url( $switch_url ); ?>" class="lfciath-lang-pill-item lfciath-lang-switch">TH</a>
+                        <span class="lfciath-lang-pill-item lfciath-lang-active">EN</span>
+                    <?php endif; ?>
+                </div>
             </nav>
         </div>
     </header>
@@ -542,11 +542,15 @@ function lfciath_get_news_css() {
 #lfciath-site-header.scrolled .lfciath-header-nav-link:hover { color: #C8102E !important; }
 
 /* Language Switch */
-.lfciath-lang-switch { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: rgba(255,255,255,0.15); color: #fff; font-size: 18px; border-radius: 4px; text-decoration: none; transition: var(--lfc-transition); border: 1px solid rgba(255,255,255,0.3); cursor: pointer; }
-.lfciath-lang-switch:hover { background: rgba(255,255,255,0.3); text-decoration: none; color: #fff; }
-.lfciath-lang-arrow { font-size: 10px; }
-.lfciath-site-header.scrolled .lfciath-lang-switch { border-color: #ddd; background: transparent; }
-.lfciath-site-header.scrolled .lfciath-lang-switch:hover { background: #f5f5f5; }
+/* Language Pill [TH | EN] */
+.lfciath-lang-pill { display: inline-flex; align-items: center; background: rgba(255,255,255,0.12); border-radius: 20px; border: 1px solid rgba(255,255,255,0.25); overflow: hidden; }
+.lfciath-lang-pill-item { display: inline-block; padding: 5px 14px; font-family: var(--lfc-font-en); font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color: rgba(255,255,255,0.5); text-decoration: none; transition: all 0.25s ease; cursor: pointer; line-height: 1; border-radius: 20px; }
+.lfciath-lang-pill-item:hover { color: #fff; text-decoration: none; }
+.lfciath-lang-pill-item.lfciath-lang-active { background: #fff; color: #C8102E; cursor: default; font-weight: 800; }
+.lfciath-site-header.scrolled .lfciath-lang-pill { background: #f5f5f5; border-color: #ddd; }
+.lfciath-site-header.scrolled .lfciath-lang-pill-item { color: #999; }
+.lfciath-site-header.scrolled .lfciath-lang-pill-item:hover { color: #333; text-decoration: none; }
+.lfciath-site-header.scrolled .lfciath-lang-pill-item.lfciath-lang-active { background: #C8102E; color: #fff; }
 
 /* Language Popup */
 .lfciath-lang-popup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 99998; }
