@@ -11,8 +11,8 @@
  * ใช้ template_include + render full page พร้อม header/footer
  * เพื่อให้ทำงานได้กับทุก theme รวม Elementor Pro
  * ============================================================
- * @version  V.12
- * @updated  2026-03-24
+ * @version  V.13
+ * @updated  2026-04-07
  */
 
 // Override single template — render full page with header/footer
@@ -41,11 +41,22 @@ add_filter( 'template_include', 'lfciath_news_single_template' );
 function lfciath_render_single_news_page() {
     global $post;
 
-    // ดึงข้อมูล ACF
-    $subtitle       = get_field( 'news_subtitle', $post->ID );
+    // Lang detection (bilingual support)
+    $lang = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
+
+    // ดึงข้อมูล ACF — bilingual fields
+    if ( $lang === 'en' ) {
+        $title_display  = get_field( 'news_title_en', $post->ID ) ?: get_the_title();
+        $subtitle       = get_field( 'news_subtitle_en', $post->ID ) ?: get_field( 'news_subtitle', $post->ID );
+        $author_display = get_field( 'news_author_display_en', $post->ID ) ?: get_field( 'news_author_display', $post->ID ) ?: 'LFCIATH';
+    } else {
+        $title_display  = get_the_title();
+        $subtitle       = get_field( 'news_subtitle', $post->ID );
+        $author_display = get_field( 'news_author_display', $post->ID ) ?: 'LFCIATH';
+    }
+
     $hero_image     = get_field( 'news_hero_image', $post->ID );
     $display_date   = get_field( 'news_display_date', $post->ID );
-    $author_display = get_field( 'news_author_display', $post->ID );
     $overlay_color  = get_field( 'news_hero_overlay_color', $post->ID );
     $gallery        = function_exists( 'lfciath_get_gallery_images' ) ? lfciath_get_gallery_images( $post->ID ) : array();
     $video_url      = get_field( 'news_video_url', $post->ID );
@@ -54,9 +65,6 @@ function lfciath_render_single_news_page() {
     // Fallbacks
     if ( ! $display_date ) {
         $display_date = get_the_date( 'd/m/y', $post->ID );
-    }
-    if ( ! $author_display ) {
-        $author_display = 'LFCIATH';
     }
     if ( ! $overlay_color ) {
         $overlay_color = '#C8102E';
@@ -79,18 +87,23 @@ function lfciath_render_single_news_page() {
         $video_embed = '<div class="lfciath-news-video">' . wp_oembed_get( $video_url ) . '</div>';
     }
 
-    // Content
-    $content = apply_filters( 'the_content', $post->post_content );
+    // Content — bilingual
+    if ( $lang === 'en' ) {
+        $en_content = get_field( 'news_content_en', $post->ID );
+        $content = $en_content ? apply_filters( 'the_content', $en_content ) : apply_filters( 'the_content', $post->post_content );
+    } else {
+        $content = apply_filters( 'the_content', $post->post_content );
+    }
 
     // CSS
     $css = function_exists( 'lfciath_get_news_css' ) ? lfciath_get_news_css() : '';
 
     ?><!DOCTYPE html>
-<html <?php language_attributes(); ?>>
+<html lang="<?php echo $lang === 'en' ? 'en' : 'th'; ?>">
 <head>
     <meta charset="<?php bloginfo( 'charset' ); ?>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo esc_html( get_the_title() ); ?> - <?php bloginfo( 'name' ); ?></title>
+    <title><?php echo esc_html( $title_display ); ?> - <?php bloginfo( 'name' ); ?></title>
     <?php wp_head(); ?>
     <style><?php echo $css; ?></style>
 </head>
@@ -108,12 +121,12 @@ function lfciath_render_single_news_page() {
         <!-- Hero Banner: Image + Red Title Bar -->
         <?php if ( $hero_url ) : ?>
         <div class="lfciath-news-hero">
-            <img class="lfciath-news-hero-img" src="<?php echo esc_url( $hero_url ); ?>" alt="<?php echo esc_attr( get_the_title() ); ?>">
+            <img class="lfciath-news-hero-img" src="<?php echo esc_url( $hero_url ); ?>" alt="<?php echo esc_attr( $title_display ); ?>">
         </div>
         <?php endif; ?>
         <div class="lfciath-news-hero-bar">
             <div class="lfciath-news-hero-content">
-                <h1 class="lfciath-news-title"><?php echo esc_html( get_the_title() ); ?></h1>
+                <h1 class="lfciath-news-title"><?php echo esc_html( $title_display ); ?></h1>
                 <?php if ( $subtitle ) : ?>
                     <p class="lfciath-news-subtitle"><?php echo esc_html( $subtitle ); ?></p>
                 <?php endif; ?>
@@ -123,8 +136,8 @@ function lfciath_render_single_news_page() {
         <!-- Meta Info & Social Share -->
         <div class="lfciath-news-meta-wrapper">
             <div class="lfciath-news-meta">
-                <span class="lfciath-news-date">ตีพิมพ์ <?php echo esc_html( $display_date ); ?></span>
-                <span class="lfciath-news-author">โดย <?php echo esc_html( $author_display ); ?></span>
+                <span class="lfciath-news-date"><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'published' ) : 'ตีพิมพ์' ); ?> <?php echo esc_html( $display_date ); ?></span>
+                <span class="lfciath-news-author"><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'by' ) : 'โดย' ); ?> <?php echo esc_html( $author_display ); ?></span>
             </div>
 
             <!-- Categories -->
@@ -132,7 +145,7 @@ function lfciath_render_single_news_page() {
             <div class="lfciath-news-categories">
                 <?php foreach ( $categories as $cat ) : ?>
                     <a href="<?php echo esc_url( get_term_link( $cat ) ); ?>" class="lfciath-news-cat-badge">
-                        <?php echo esc_html( $cat->name ); ?>
+                        <?php echo esc_html( function_exists( 'lfciath_get_cat_name' ) ? lfciath_get_cat_name( $cat, $lang ) : $cat->name ); ?>
                     </a>
                 <?php endforeach; ?>
             </div>
@@ -141,8 +154,9 @@ function lfciath_render_single_news_page() {
             <!-- Social Share -->
             <div class="lfciath-news-share">
                 <?php
-                $share_url   = rawurlencode( get_permalink() );
-                $share_title = rawurlencode( get_the_title() );
+                $share_permalink = function_exists( 'lfciath_get_news_url' ) ? lfciath_get_news_url( $post->ID, $lang ) : get_permalink();
+                $share_url   = rawurlencode( $share_permalink );
+                $share_title = rawurlencode( $title_display );
                 ?>
                 <a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo $share_url; ?>"
                    target="_blank" rel="noopener" class="lfciath-share-btn lfciath-share-facebook"
@@ -210,9 +224,13 @@ function lfciath_render_single_news_page() {
 
         <!-- CTA / Follow Section -->
         <div class="lfciath-news-cta">
-            <p>ผู้สนใจสามารถติดตามข่าวสารและสมัครเข้าร่วมโครงการต่างๆ<br>
-            ของ Liverpool FC International Academy Thailand<br>
-            ได้ที่ Line ID: <strong>@LFCIATH</strong></p>
+            <?php if ( function_exists( 'lfciath_t' ) ) : ?>
+                <p><?php echo wp_kses_post( lfciath_t( 'cta_text' ) ); ?></p>
+            <?php else : ?>
+                <p>ผู้สนใจสามารถติดตามข่าวสารและสมัครเข้าร่วมโครงการต่างๆ<br>
+                ของ Liverpool FC International Academy Thailand<br>
+                ได้ที่ Line ID: <strong>@LFCIATH</strong></p>
+            <?php endif; ?>
         </div>
 
         <!-- Related News -->

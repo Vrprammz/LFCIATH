@@ -8,8 +8,8 @@
  * ระบบจัดการตารางกิจกรรม: วัน เวลา สถานที่ ชื่อกิจกรรม
  * Shortcode: [lfciath_activity_schedule count="10" show_past="no" type="" view="cards" age_group="" show_filter="no"]
  * ============================================================
- * @version  V.12.2
- * @updated  2026-03-24
+ * @version  V.13
+ * @updated  2026-04-07
  */
 
 // ============================================================
@@ -181,6 +181,11 @@ function lfciath_handle_activity_save() {
     $description  = isset( $_POST['activity_description'] )    ? sanitize_textarea_field( wp_unslash( $_POST['activity_description'] ) ) : '';
     $status       = isset( $_POST['activity_status'] )         ? sanitize_text_field( wp_unslash( $_POST['activity_status'] ) )         : 'upcoming';
 
+    // English fields
+    $title_en       = isset( $_POST['activity_title_en'] )       ? sanitize_text_field( wp_unslash( $_POST['activity_title_en'] ) )       : '';
+    $description_en = isset( $_POST['activity_description_en'] ) ? sanitize_textarea_field( wp_unslash( $_POST['activity_description_en'] ) ) : '';
+    $location_en    = isset( $_POST['activity_location_en'] )    ? sanitize_text_field( wp_unslash( $_POST['activity_location_en'] ) )    : '';
+
     if ( empty( $title ) || empty( $date ) ) {
         $back = $edit_id
             ? admin_url( 'admin.php?page=lfciath-activity-edit&id=' . $edit_id . '&error=required' )
@@ -216,6 +221,11 @@ function lfciath_handle_activity_save() {
     update_post_meta( $post_id, 'activity_age_group',    $age_group );
     update_post_meta( $post_id, 'activity_description',  $description );
     update_post_meta( $post_id, 'activity_status',       $status );
+
+    // English fields
+    update_post_meta( $post_id, 'activity_title_en',       $title_en );
+    update_post_meta( $post_id, 'activity_description_en', $description_en );
+    update_post_meta( $post_id, 'activity_location_en',    $location_en );
 
     $label = $edit_id > 0 ? 'updated' : 'created';
     wp_redirect( admin_url( 'admin.php?page=lfciath-activities&success=' . $label ) );
@@ -485,6 +495,11 @@ function lfciath_activity_form_page() {
     $v_desc     = $edit_post ? get_post_meta( $edit_id, 'activity_description',  true )  : '';
     $v_status   = $edit_post ? get_post_meta( $edit_id, 'activity_status',       true )  : 'upcoming';
 
+    // English fields
+    $v_title_en = $edit_post ? get_post_meta( $edit_id, 'activity_title_en',       true ) : '';
+    $v_desc_en  = $edit_post ? get_post_meta( $edit_id, 'activity_description_en', true ) : '';
+    $v_loc_en   = $edit_post ? get_post_meta( $edit_id, 'activity_location_en',    true ) : '';
+
     $page_title = $edit_id ? 'แก้ไขกิจกรรม' : 'เพิ่มกิจกรรมใหม่';
     ?>
     <div class="wrap">
@@ -525,6 +540,14 @@ function lfciath_activity_form_page() {
                                class="lfciath-dash-input-full"
                                style="font-size:20px;font-weight:600;padding:14px 16px;"
                                placeholder="พิมพ์ชื่อกิจกรรม..." required />
+
+                        <label class="lfciath-dash-label" for="activity_title_en" style="margin-top:14px;color:#666;">
+                            ชื่อกิจกรรม (English)
+                        </label>
+                        <input type="text" name="activity_title_en" id="activity_title_en"
+                               value="<?php echo esc_attr( $v_title_en ); ?>"
+                               class="lfciath-dash-input-full"
+                               placeholder="Activity title in English..." />
                     </div>
 
                     <!-- วันและเวลา -->
@@ -564,6 +587,14 @@ function lfciath_activity_form_page() {
                                class="lfciath-dash-input-full"
                                placeholder="เช่น ศูนย์ฝึก LFCIATH, สนามกีฬา..." />
 
+                        <label class="lfciath-dash-label" for="activity_location_en" style="margin-top:14px;color:#666;">
+                            สถานที่ (English)
+                        </label>
+                        <input type="text" name="activity_location_en" id="activity_location_en"
+                               value="<?php echo esc_attr( $v_loc_en ); ?>"
+                               class="lfciath-dash-input-full"
+                               placeholder="e.g. LFCIATH Training Center, Stadium..." />
+
                         <label class="lfciath-dash-label" for="activity_location_url"
                                style="margin-top:14px;">
                             🗺️ Google Maps URL <span style="font-weight:400;color:#888;">(ไม่บังคับ)</span>
@@ -584,6 +615,15 @@ function lfciath_activity_form_page() {
                                   rows="4"
                                   style="resize:vertical;"
                                   placeholder="รายละเอียดกิจกรรม..."><?php echo esc_textarea( $v_desc ); ?></textarea>
+
+                        <label class="lfciath-dash-label" for="activity_description_en" style="margin-top:14px;color:#666;">
+                            รายละเอียด (English) <span style="font-weight:400;color:#888;">(ไม่บังคับ)</span>
+                        </label>
+                        <textarea name="activity_description_en" id="activity_description_en"
+                                  class="lfciath-dash-input-full"
+                                  rows="4"
+                                  style="resize:vertical;"
+                                  placeholder="Activity description in English..."><?php echo esc_textarea( $v_desc_en ); ?></textarea>
                     </div>
 
                 </div>
@@ -788,6 +828,7 @@ function lfciath_build_activity_schedule( $atts ) {
     $wrap_counter++;
     $wrap_id = 'lfciath-act-wrap-' . $wrap_counter;
 
+    $lang  = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
     $types = lfciath_get_activity_types();
     $today = wp_date( 'Y-m-d' );
 
@@ -796,6 +837,13 @@ function lfciath_build_activity_schedule( $atts ) {
         '05' => 'พ.ค.', '06' => 'มิ.ย.', '07' => 'ก.ค.', '08' => 'ส.ค.',
         '09' => 'ก.ย.', '10' => 'ต.ค.', '11' => 'พ.ย.', '12' => 'ธ.ค.',
     );
+    $en_months = array(
+        '01' => 'Jan', '02' => 'Feb', '03' => 'Mar', '04' => 'Apr',
+        '05' => 'May', '06' => 'Jun', '07' => 'Jul', '08' => 'Aug',
+        '09' => 'Sep', '10' => 'Oct', '11' => 'Nov', '12' => 'Dec',
+    );
+    $months      = ( $lang === 'en' ) ? $en_months : $thai_months;
+    $year_offset = ( $lang === 'en' ) ? 0 : 543;
 
     // Resolve active type filter
     $active_type = '';
@@ -904,22 +952,24 @@ function lfciath_build_activity_schedule( $atts ) {
                 class="lfciath-act-filter-tab active"
                 data-filter="all"
                 data-wrap="<?php echo esc_attr( $wrap_id ); ?>">
-            ทั้งหมด
+            <?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'all' ) : 'ทั้งหมด' ); ?>
         </button>
-        <?php foreach ( $types as $type_key => $type_data ) : ?>
+        <?php foreach ( $types as $type_key => $type_data ) :
+            $type_label = function_exists( 'lfciath_t' ) ? lfciath_t( $type_key ) : $type_data['label'];
+        ?>
         <button type="button"
                 class="lfciath-act-filter-tab"
                 data-filter="<?php echo esc_attr( $type_key ); ?>"
                 data-color="<?php echo esc_attr( $type_data['color'] ); ?>"
                 data-wrap="<?php echo esc_attr( $wrap_id ); ?>">
-            <?php echo esc_html( $type_data['icon'] . ' ' . $type_data['label'] ); ?>
+            <?php echo esc_html( $type_data['icon'] . ' ' . $type_label ); ?>
         </button>
         <?php endforeach; ?>
     </div>
     <?php endif; ?>
 
     <?php if ( ! $query->have_posts() ) : ?>
-    <div class="lfciath-activity-empty"><p>ไม่มีกิจกรรมที่กำลังจะมาถึง</p></div>
+    <div class="lfciath-activity-empty"><p><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'no_activities' ) : 'ไม่มีกิจกรรมที่กำลังจะมาถึง' ); ?></p></div>
 
     <?php elseif ( 'table' === $atts['view'] ) : ?>
     <!-- ======= TABLE VIEW ======= -->
@@ -927,11 +977,11 @@ function lfciath_build_activity_schedule( $atts ) {
         <table class="lfciath-activity-table">
             <thead>
                 <tr>
-                    <th>วันที่</th>
-                    <th>เวลา</th>
-                    <th>ชื่อกิจกรรม</th>
-                    <th>สถานที่</th>
-                    <th>ประเภท</th>
+                    <th><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'date' ) : 'วันที่' ); ?></th>
+                    <th><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'time' ) : 'เวลา' ); ?></th>
+                    <th><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'activity_schedule' ) : 'ชื่อกิจกรรม' ); ?></th>
+                    <th><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'location' ) : 'สถานที่' ); ?></th>
+                    <th><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'all_types' ) : 'ประเภท' ); ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -949,18 +999,32 @@ function lfciath_build_activity_schedule( $atts ) {
                 $act_desc    = get_post_meta( $act_id, 'activity_description',  true );
                 $type_info   = isset( $types[ $act_type ] ) ? $types[ $act_type ] : $types['other'];
 
+                // Bilingual: EN fields with TH fallback (table view)
+                $t_title_display = get_the_title();
+                $t_desc_display  = $act_desc;
+                $t_loc_display   = $act_loc;
+                if ( $lang === 'en' ) {
+                    $t_en_title = get_post_meta( $act_id, 'activity_title_en', true );
+                    $t_en_desc  = get_post_meta( $act_id, 'activity_description_en', true );
+                    $t_en_loc   = get_post_meta( $act_id, 'activity_location_en', true );
+                    if ( ! empty( $t_en_title ) ) { $t_title_display = $t_en_title; }
+                    if ( ! empty( $t_en_desc ) )  { $t_desc_display  = $t_en_desc; }
+                    if ( ! empty( $t_en_loc ) )   { $t_loc_display   = $t_en_loc; }
+                }
+                $t_type_label = function_exists( 'lfciath_t' ) ? lfciath_t( $act_type ) : $type_info['label'];
+
                 $is_multiday_t = $act_date_end && $act_date_end !== $act_date && $act_date_end > $act_date;
 
                 $d        = $act_date ? explode( '-', $act_date ) : array( '', '', '' );
                 $day_num  = isset( $d[2] ) ? ltrim( $d[2], '0' ) : '';
-                $month_th = isset( $d[1] ) && isset( $thai_months[ $d[1] ] ) ? $thai_months[ $d[1] ] : '';
-                $year_th  = isset( $d[0] ) ? ( intval( $d[0] ) + 543 ) : '';
+                $month_th = isset( $d[1] ) && isset( $months[ $d[1] ] ) ? $months[ $d[1] ] : '';
+                $year_th  = isset( $d[0] ) ? ( intval( $d[0] ) + $year_offset ) : '';
 
                 if ( $is_multiday_t ) {
                     $de2      = explode( '-', $act_date_end );
                     $end_d    = isset( $de2[2] ) ? ltrim( $de2[2], '0' ) : '';
-                    $end_m_th = isset( $de2[1] ) && isset( $thai_months[ $de2[1] ] ) ? $thai_months[ $de2[1] ] : '';
-                    $end_y_th = isset( $de2[0] ) ? ( intval( $de2[0] ) + 543 ) : '';
+                    $end_m_th = isset( $de2[1] ) && isset( $months[ $de2[1] ] ) ? $months[ $de2[1] ] : '';
+                    $end_y_th = isset( $de2[0] ) ? ( intval( $de2[0] ) + $year_offset ) : '';
                     $same_m   = ( $d[0] === $de2[0] ) && ( $d[1] === $de2[1] );
                 }
 
@@ -986,24 +1050,24 @@ function lfciath_build_activity_schedule( $atts ) {
                         <?php echo wp_kses( $time_html, array( 'br' => array(), 'small' => array() ) ); ?>
                     </td>
                     <td>
-                        <strong><?php the_title(); ?></strong>
+                        <strong><?php echo esc_html( $t_title_display ); ?></strong>
                         <?php if ( $act_age ) : ?>
                             <span class="lfciath-act-age-badge"><?php echo esc_html( $act_age ); ?></span>
                         <?php endif; ?>
                         <?php if ( $is_cancelled ) : ?>
-                            <span class="lfciath-act-cancelled-badge">ยกเลิก</span>
+                            <span class="lfciath-act-cancelled-badge"><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'cancelled' ) : 'ยกเลิก' ); ?></span>
                         <?php endif; ?>
-                        <?php if ( $act_desc ) : ?>
-                            <br><small style="color:#888;"><?php echo esc_html( wp_trim_words( $act_desc, 12 ) ); ?></small>
+                        <?php if ( $t_desc_display ) : ?>
+                            <br><small style="color:#888;"><?php echo esc_html( wp_trim_words( $t_desc_display, 12 ) ); ?></small>
                         <?php endif; ?>
                     </td>
                     <td>
                         <?php if ( $act_loc_url ) : ?>
                             <a href="<?php echo esc_url( $act_loc_url ); ?>" target="_blank" rel="noopener" class="lfciath-act-map-link">
-                                📍 <?php echo esc_html( $act_loc ?: 'ดูแผนที่' ); ?>
+                                📍 <?php echo esc_html( $t_loc_display ?: ( $lang === 'en' ? 'View map' : 'ดูแผนที่' ) ); ?>
                             </a>
-                        <?php elseif ( $act_loc ) : ?>
-                            📍 <?php echo esc_html( $act_loc ); ?>
+                        <?php elseif ( $t_loc_display ) : ?>
+                            📍 <?php echo esc_html( $t_loc_display ); ?>
                         <?php else : ?>
                             <span style="color:#ccc;">—</span>
                         <?php endif; ?>
@@ -1011,7 +1075,7 @@ function lfciath_build_activity_schedule( $atts ) {
                     <td>
                         <span class="lfciath-act-type-badge"
                               style="background:<?php echo esc_attr( $type_info['color'] ); ?>;">
-                            <?php echo esc_html( $type_info['icon'] . ' ' . $type_info['label'] ); ?>
+                            <?php echo esc_html( $type_info['icon'] . ' ' . $t_type_label ); ?>
                         </span>
                     </td>
                 </tr>
@@ -1041,26 +1105,41 @@ function lfciath_build_activity_schedule( $atts ) {
         $act_img_url  = $act_img_id ? wp_get_attachment_image_url( $act_img_id, 'medium' ) : '';
         $type_info    = isset( $types[ $act_type ] ) ? $types[ $act_type ] : $types['other'];
 
+        // Bilingual: EN fields with TH fallback
+        $act_title_display = get_the_title();
+        $act_desc_display  = $act_desc;
+        $act_loc_display   = $act_loc;
+        if ( $lang === 'en' ) {
+            $en_title = get_post_meta( $act_id, 'activity_title_en', true );
+            $en_desc  = get_post_meta( $act_id, 'activity_description_en', true );
+            $en_loc   = get_post_meta( $act_id, 'activity_location_en', true );
+            if ( ! empty( $en_title ) ) { $act_title_display = $en_title; }
+            if ( ! empty( $en_desc ) )  { $act_desc_display  = $en_desc; }
+            if ( ! empty( $en_loc ) )   { $act_loc_display   = $en_loc; }
+        }
+        $type_label = function_exists( 'lfciath_t' ) ? lfciath_t( $act_type ) : $type_info['label'];
+
         $is_multiday  = $act_date_end && $act_date_end !== $act_date && $act_date_end > $act_date;
 
         $d        = $act_date ? explode( '-', $act_date ) : array( '', '', '' );
         $day_num  = isset( $d[2] ) ? ltrim( $d[2], '0' ) : '';
-        $month_th = isset( $d[1] ) && isset( $thai_months[ $d[1] ] ) ? $thai_months[ $d[1] ] : '';
-        $year_th  = isset( $d[0] ) ? ( intval( $d[0] ) + 543 ) : '';
-        $dow      = $act_date ? lfciath_thai_day_abbr( (int) wp_date( 'w', strtotime( $act_date ) ) ) : '';
+        $month_th = isset( $d[1] ) && isset( $months[ $d[1] ] ) ? $months[ $d[1] ] : '';
+        $year_th  = isset( $d[0] ) ? ( intval( $d[0] ) + $year_offset ) : '';
+        $dow      = $act_date ? lfciath_thai_day_abbr( (int) wp_date( 'w', strtotime( $act_date ) ), $lang ) : '';
 
         // End date parts for multi-day
         $de           = $is_multiday ? explode( '-', $act_date_end ) : array();
         $end_day      = isset( $de[2] ) ? ltrim( $de[2], '0' ) : '';
-        $end_month_th = isset( $de[1] ) && isset( $thai_months[ $de[1] ] ) ? $thai_months[ $de[1] ] : '';
-        $end_year_th  = isset( $de[0] ) ? ( intval( $de[0] ) + 543 ) : '';
+        $end_month_th = isset( $de[1] ) && isset( $months[ $de[1] ] ) ? $months[ $de[1] ] : '';
+        $end_year_th  = isset( $de[0] ) ? ( intval( $de[0] ) + $year_offset ) : '';
         $same_month   = $is_multiday && ( $d[0] === $de[0] ) && ( $d[1] === $de[1] );
 
         $time_display = '';
+        $time_suffix  = ( $lang === 'en' ) ? '' : ' น.';
         if ( $act_time_s ) {
-            $time_display = $act_time_s . ' น.';
+            $time_display = $act_time_s . $time_suffix;
             if ( $act_time_e ) {
-                $time_display .= ' – ' . $act_time_e . ' น.';
+                $time_display .= ' – ' . $act_time_e . $time_suffix;
             }
         }
 
@@ -1074,7 +1153,7 @@ function lfciath_build_activity_schedule( $atts ) {
             <!-- Date Column -->
             <div class="lfciath-act-date-col" style="background:<?php echo esc_attr( $type_info['color'] ); ?>;">
                 <?php if ( $is_multiday ) : ?>
-                    <span class="lfciath-act-dow" style="font-size:9px;letter-spacing:.3px;">ช่วงเวลา</span>
+                    <span class="lfciath-act-dow" style="font-size:9px;letter-spacing:.3px;"><?php echo esc_html( $lang === 'en' ? 'Period' : 'ช่วงเวลา' ); ?></span>
                     <span class="lfciath-act-day-big" style="font-size:18px;line-height:1.1;"><?php echo esc_html( $day_num . '–' . $end_day ); ?></span>
                     <span class="lfciath-act-month-sm"><?php echo esc_html( $same_month ? $month_th : $month_th . '–' . $end_month_th ); ?></span>
                     <span class="lfciath-act-year-sm"><?php echo esc_html( $year_th ); ?></span>
@@ -1091,17 +1170,17 @@ function lfciath_build_activity_schedule( $atts ) {
                 <div class="lfciath-act-card-meta">
                     <span class="lfciath-act-type-badge"
                           style="background:<?php echo esc_attr( $type_info['color'] ); ?>;">
-                        <?php echo esc_html( $type_info['icon'] . ' ' . $type_info['label'] ); ?>
+                        <?php echo esc_html( $type_info['icon'] . ' ' . $type_label ); ?>
                     </span>
                     <?php if ( $act_age ) : ?>
                         <span class="lfciath-act-age-badge"><?php echo esc_html( $act_age ); ?></span>
                     <?php endif; ?>
                     <?php if ( $is_cancelled ) : ?>
-                        <span class="lfciath-act-cancelled-badge">ยกเลิก</span>
+                        <span class="lfciath-act-cancelled-badge"><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'cancelled' ) : 'ยกเลิก' ); ?></span>
                     <?php endif; ?>
                 </div>
 
-                <h4 class="lfciath-act-card-title"><?php the_title(); ?></h4>
+                <h4 class="lfciath-act-card-title"><?php echo esc_html( $act_title_display ); ?></h4>
 
                 <?php if ( $act_img_url ) : ?>
                 <div class="lfciath-act-card-img">
@@ -1115,38 +1194,38 @@ function lfciath_build_activity_schedule( $atts ) {
                 </p>
                 <?php endif; ?>
 
-                <?php if ( $act_loc ) : ?>
+                <?php if ( $act_loc_display ) : ?>
                 <p class="lfciath-act-card-detail">
                     <?php if ( $act_loc_url ) : ?>
                         <a href="<?php echo esc_url( $act_loc_url ); ?>" target="_blank" rel="noopener" class="lfciath-act-map-link">
-                            📍 <?php echo esc_html( $act_loc ); ?>
+                            📍 <?php echo esc_html( $act_loc_display ); ?>
                         </a>
                     <?php else : ?>
-                        📍 <?php echo esc_html( $act_loc ); ?>
+                        📍 <?php echo esc_html( $act_loc_display ); ?>
                     <?php endif; ?>
                 </p>
                 <?php endif; ?>
 
                 <?php
                 $act_modal_id  = 'lfciath-act-modal-' . $act_id;
-                $short_desc    = $act_desc ? wp_trim_words( $act_desc, 20, '' ) : '';
-                $has_more_desc = $act_desc && ( mb_strlen( $act_desc ) > mb_strlen( $short_desc ) + 2 );
+                $short_desc    = $act_desc_display ? wp_trim_words( $act_desc_display, 20, '' ) : '';
+                $has_more_desc = $act_desc_display && ( mb_strlen( $act_desc_display ) > mb_strlen( $short_desc ) + 2 );
                 ?>
-                <?php if ( $act_desc ) : ?>
+                <?php if ( $act_desc_display ) : ?>
                 <p class="lfciath-act-card-desc">
-                    <?php echo esc_html( wp_trim_words( $act_desc, 20, $has_more_desc ? '...' : '' ) ); ?>
+                    <?php echo esc_html( wp_trim_words( $act_desc_display, 20, $has_more_desc ? '...' : '' ) ); ?>
                 </p>
                 <?php endif; ?>
                 <?php if ( $has_more_desc || $act_img_url ) : ?>
                 <button type="button" class="lfciath-act-readmore-btn" data-modal="<?php echo esc_attr( $act_modal_id ); ?>">
-                    อ่านเพิ่มเติม ↓
+                    <?php echo esc_html( $lang === 'en' ? 'Read more' : 'อ่านเพิ่มเติม' ); ?> ↓
                 </button>
                 <?php endif; ?>
 
                 <?php if ( $act_register_url ) : ?>
                 <div class="lfciath-act-card-footer">
                     <a href="<?php echo esc_url( $act_register_url ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-act-register-btn">
-                        สมัครเลย →
+                        <?php echo esc_html( $lang === 'en' ? 'Register now' : 'สมัครเลย' ); ?> →
                     </a>
                 </div>
                 <?php endif; ?>
@@ -1155,28 +1234,28 @@ function lfciath_build_activity_schedule( $atts ) {
         </div>
         <?php
         // Build modal HTML for this card
-        $act_title_esc = esc_html( get_the_title() );
+        $act_title_esc = esc_html( $act_title_display );
         $act_img_full  = $act_img_id ? wp_get_attachment_image_url( $act_img_id, 'large' ) : '';
         ob_start();
         ?>
         <div id="<?php echo esc_attr( $act_modal_id ); ?>" class="lfciath-act-modal" hidden aria-modal="true" role="dialog">
             <div class="lfciath-act-modal-inner">
-                <button type="button" class="lfciath-act-modal-close" aria-label="ปิด">✕</button>
+                <button type="button" class="lfciath-act-modal-close" aria-label="<?php echo esc_attr( $lang === 'en' ? 'Close' : 'ปิด' ); ?>">✕</button>
                 <?php if ( $act_img_full ) : ?>
                 <img src="<?php echo esc_url( $act_img_full ); ?>" alt="<?php echo $act_title_esc; ?>" class="lfciath-act-modal-img" loading="lazy" />
                 <?php endif; ?>
                 <h3 class="lfciath-act-modal-title"><?php echo $act_title_esc; ?></h3>
                 <div class="lfciath-act-modal-meta">
                     <?php if ( $time_display ) : ?><?php echo esc_html( '🕐 ' . $time_display ); ?><br><?php endif; ?>
-                    <?php if ( $act_loc ) : ?><?php echo esc_html( '📍 ' . $act_loc ); ?><br><?php endif; ?>
+                    <?php if ( $act_loc_display ) : ?><?php echo esc_html( '📍 ' . $act_loc_display ); ?><br><?php endif; ?>
                     <?php if ( $act_age ) : ?><?php echo esc_html( '👤 ' . $act_age ); ?><?php endif; ?>
                 </div>
-                <?php if ( $act_desc ) : ?>
-                <p class="lfciath-act-modal-desc"><?php echo nl2br( esc_html( $act_desc ) ); ?></p>
+                <?php if ( $act_desc_display ) : ?>
+                <p class="lfciath-act-modal-desc"><?php echo nl2br( esc_html( $act_desc_display ) ); ?></p>
                 <?php endif; ?>
                 <?php if ( $act_register_url ) : ?>
                 <a href="<?php echo esc_url( $act_register_url ); ?>" target="_blank" rel="noopener noreferrer" class="lfciath-act-register-btn" style="display:inline-block;width:auto;text-align:center;margin-top:4px;">
-                    สมัครเลย →
+                    <?php echo esc_html( $lang === 'en' ? 'Register now' : 'สมัครเลย' ); ?> →
                 </a>
                 <?php endif; ?>
             </div>
@@ -1195,18 +1274,18 @@ function lfciath_build_activity_schedule( $atts ) {
     if ( $past_query && $past_query->have_posts() ) :
     ?>
     <div class="lfciath-activity-past-section">
-        <h3 class="lfciath-activity-past-heading">กิจกรรมที่ผ่านมา</h3>
+        <h3 class="lfciath-activity-past-heading"><?php echo esc_html( $lang === 'en' ? 'Past Activities' : 'กิจกรรมที่ผ่านมา' ); ?></h3>
 
         <?php if ( 'table' === $atts['view'] ) : ?>
         <div class="lfciath-activity-table-wrap lfciath-activity-past">
             <table class="lfciath-activity-table">
                 <thead>
                     <tr>
-                        <th>วันที่</th>
-                        <th>เวลา</th>
-                        <th>ชื่อกิจกรรม</th>
-                        <th>สถานที่</th>
-                        <th>ประเภท</th>
+                        <th><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'date' ) : 'วันที่' ); ?></th>
+                        <th><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'time' ) : 'เวลา' ); ?></th>
+                        <th><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'activity_schedule' ) : 'ชื่อกิจกรรม' ); ?></th>
+                        <th><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'location' ) : 'สถานที่' ); ?></th>
+                        <th><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'all_types' ) : 'ประเภท' ); ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -1223,17 +1302,31 @@ function lfciath_build_activity_schedule( $atts ) {
                     $p_date_end = get_post_meta( $p_id, 'activity_date_end',     true );
                     $p_type_info = isset( $types[ $p_type ] ) ? $types[ $p_type ] : $types['other'];
 
+                    // Bilingual: EN fields with TH fallback (past table)
+                    $pt_title = get_the_title();
+                    $pt_desc  = $p_desc;
+                    $pt_loc   = $p_loc;
+                    if ( $lang === 'en' ) {
+                        $pt_en_t = get_post_meta( $p_id, 'activity_title_en', true );
+                        $pt_en_d = get_post_meta( $p_id, 'activity_description_en', true );
+                        $pt_en_l = get_post_meta( $p_id, 'activity_location_en', true );
+                        if ( ! empty( $pt_en_t ) ) { $pt_title = $pt_en_t; }
+                        if ( ! empty( $pt_en_d ) ) { $pt_desc  = $pt_en_d; }
+                        if ( ! empty( $pt_en_l ) ) { $pt_loc   = $pt_en_l; }
+                    }
+                    $pt_type_label = function_exists( 'lfciath_t' ) ? lfciath_t( $p_type ) : $p_type_info['label'];
+
                     $p_is_multiday = $p_date_end && $p_date_end !== $p_date && $p_date_end > $p_date;
 
                     $pd       = $p_date ? explode( '-', $p_date ) : array( '', '', '' );
                     $p_day    = isset( $pd[2] ) ? ltrim( $pd[2], '0' ) : '';
-                    $p_month  = isset( $pd[1] ) && isset( $thai_months[ $pd[1] ] ) ? $thai_months[ $pd[1] ] : '';
-                    $p_year   = isset( $pd[0] ) ? ( intval( $pd[0] ) + 543 ) : '';
+                    $p_month  = isset( $pd[1] ) && isset( $months[ $pd[1] ] ) ? $months[ $pd[1] ] : '';
+                    $p_year   = isset( $pd[0] ) ? ( intval( $pd[0] ) + $year_offset ) : '';
 
                     if ( $p_is_multiday ) {
                         $pde      = explode( '-', $p_date_end );
                         $p_end_d  = isset( $pde[2] ) ? ltrim( $pde[2], '0' ) : '';
-                        $p_end_m  = isset( $pde[1] ) && isset( $thai_months[ $pde[1] ] ) ? $thai_months[ $pde[1] ] : '';
+                        $p_end_m  = isset( $pde[1] ) && isset( $months[ $pde[1] ] ) ? $months[ $pde[1] ] : '';
                         $p_same_m = ( $pd[0] === $pde[0] ) && ( $pd[1] === $pde[1] );
                     }
 
@@ -1256,21 +1349,21 @@ function lfciath_build_activity_schedule( $atts ) {
                             <?php echo wp_kses( $p_time_html, array( 'br' => array(), 'small' => array() ) ); ?>
                         </td>
                         <td>
-                            <strong><?php the_title(); ?></strong>
+                            <strong><?php echo esc_html( $pt_title ); ?></strong>
                             <?php if ( $p_age ) : ?>
                                 <span class="lfciath-act-age-badge"><?php echo esc_html( $p_age ); ?></span>
                             <?php endif; ?>
-                            <?php if ( $p_desc ) : ?>
-                                <br><small style="color:#aaa;"><?php echo esc_html( wp_trim_words( $p_desc, 12 ) ); ?></small>
+                            <?php if ( $pt_desc ) : ?>
+                                <br><small style="color:#aaa;"><?php echo esc_html( wp_trim_words( $pt_desc, 12 ) ); ?></small>
                             <?php endif; ?>
                         </td>
                         <td>
                             <?php if ( $p_loc_url ) : ?>
                                 <a href="<?php echo esc_url( $p_loc_url ); ?>" target="_blank" rel="noopener" class="lfciath-act-map-link">
-                                    📍 <?php echo esc_html( $p_loc ?: 'ดูแผนที่' ); ?>
+                                    📍 <?php echo esc_html( $pt_loc ?: ( $lang === 'en' ? 'View map' : 'ดูแผนที่' ) ); ?>
                                 </a>
-                            <?php elseif ( $p_loc ) : ?>
-                                📍 <?php echo esc_html( $p_loc ); ?>
+                            <?php elseif ( $pt_loc ) : ?>
+                                📍 <?php echo esc_html( $pt_loc ); ?>
                             <?php else : ?>
                                 <span style="color:#ccc;">—</span>
                             <?php endif; ?>
@@ -1278,7 +1371,7 @@ function lfciath_build_activity_schedule( $atts ) {
                         <td>
                             <span class="lfciath-act-type-badge"
                                   style="background:<?php echo esc_attr( $p_type_info['color'] ); ?>;">
-                                <?php echo esc_html( $p_type_info['icon'] . ' ' . $p_type_info['label'] ); ?>
+                                <?php echo esc_html( $p_type_info['icon'] . ' ' . $pt_type_label ); ?>
                             </span>
                         </td>
                     </tr>
@@ -1305,25 +1398,39 @@ function lfciath_build_activity_schedule( $atts ) {
             $p_img_url   = $p_img_id ? wp_get_attachment_image_url( $p_img_id, 'medium' ) : '';
             $p_type_info = isset( $types[ $p_type ] ) ? $types[ $p_type ] : $types['other'];
 
+            // Bilingual: EN fields with TH fallback (past cards)
+            $pc_title = get_the_title();
+            $pc_desc  = $p_desc;
+            $pc_loc   = $p_loc;
+            if ( $lang === 'en' ) {
+                $pc_en_t = get_post_meta( $p_id, 'activity_title_en', true );
+                $pc_en_d = get_post_meta( $p_id, 'activity_description_en', true );
+                $pc_en_l = get_post_meta( $p_id, 'activity_location_en', true );
+                if ( ! empty( $pc_en_t ) ) { $pc_title = $pc_en_t; }
+                if ( ! empty( $pc_en_d ) ) { $pc_desc  = $pc_en_d; }
+                if ( ! empty( $pc_en_l ) ) { $pc_loc   = $pc_en_l; }
+            }
+            $pc_type_label = function_exists( 'lfciath_t' ) ? lfciath_t( $p_type ) : $p_type_info['label'];
+
             $p_is_multiday = $p_date_end && $p_date_end !== $p_date && $p_date_end > $p_date;
 
             $pd          = $p_date ? explode( '-', $p_date ) : array( '', '', '' );
             $p_day_num   = isset( $pd[2] ) ? ltrim( $pd[2], '0' ) : '';
-            $p_month_th  = isset( $pd[1] ) && isset( $thai_months[ $pd[1] ] ) ? $thai_months[ $pd[1] ] : '';
-            $p_year_th   = isset( $pd[0] ) ? ( intval( $pd[0] ) + 543 ) : '';
-            $p_dow       = $p_date ? lfciath_thai_day_abbr( (int) wp_date( 'w', strtotime( $p_date ) ) ) : '';
+            $p_month_th  = isset( $pd[1] ) && isset( $months[ $pd[1] ] ) ? $months[ $pd[1] ] : '';
+            $p_year_th   = isset( $pd[0] ) ? ( intval( $pd[0] ) + $year_offset ) : '';
+            $p_dow       = $p_date ? lfciath_thai_day_abbr( (int) wp_date( 'w', strtotime( $p_date ) ), $lang ) : '';
 
             $pde          = $p_is_multiday ? explode( '-', $p_date_end ) : array();
             $p_end_day    = isset( $pde[2] ) ? ltrim( $pde[2], '0' ) : '';
-            $p_end_mon_th = isset( $pde[1] ) && isset( $thai_months[ $pde[1] ] ) ? $thai_months[ $pde[1] ] : '';
-            $p_end_yr_th  = isset( $pde[0] ) ? ( intval( $pde[0] ) + 543 ) : '';
+            $p_end_mon_th = isset( $pde[1] ) && isset( $months[ $pde[1] ] ) ? $months[ $pde[1] ] : '';
+            $p_end_yr_th  = isset( $pde[0] ) ? ( intval( $pde[0] ) + $year_offset ) : '';
             $p_same_month = $p_is_multiday && ( $pd[0] === $pde[0] ) && ( $pd[1] === $pde[1] );
 
             $p_time_display = '';
             if ( $p_time_s ) {
-                $p_time_display = $p_time_s . ' น.';
+                $p_time_display = $p_time_s . ( $lang === 'en' ? '' : ' น.' );
                 if ( $p_time_e ) {
-                    $p_time_display .= ' – ' . $p_time_e . ' น.';
+                    $p_time_display .= ' – ' . $p_time_e . ( $lang === 'en' ? '' : ' น.' );
                 }
             }
             ?>
@@ -1333,7 +1440,7 @@ function lfciath_build_activity_schedule( $atts ) {
                 <!-- Date Column -->
                 <div class="lfciath-act-date-col" style="background:<?php echo esc_attr( $p_type_info['color'] ); ?>;opacity:.65;">
                     <?php if ( $p_is_multiday ) : ?>
-                        <span class="lfciath-act-dow" style="font-size:9px;letter-spacing:.3px;">ช่วงเวลา</span>
+                        <span class="lfciath-act-dow" style="font-size:9px;letter-spacing:.3px;"><?php echo esc_html( $lang === 'en' ? 'Period' : 'ช่วงเวลา' ); ?></span>
                         <span class="lfciath-act-day-big" style="font-size:18px;line-height:1.1;"><?php echo esc_html( $p_day_num . '–' . $p_end_day ); ?></span>
                         <span class="lfciath-act-month-sm"><?php echo esc_html( $p_same_month ? $p_month_th : $p_month_th . '–' . $p_end_mon_th ); ?></span>
                         <span class="lfciath-act-year-sm"><?php echo esc_html( $p_year_th ); ?></span>
@@ -1350,19 +1457,19 @@ function lfciath_build_activity_schedule( $atts ) {
                     <div class="lfciath-act-card-meta">
                         <span class="lfciath-act-type-badge"
                               style="background:<?php echo esc_attr( $p_type_info['color'] ); ?>;">
-                            <?php echo esc_html( $p_type_info['icon'] . ' ' . $p_type_info['label'] ); ?>
+                            <?php echo esc_html( $p_type_info['icon'] . ' ' . $pc_type_label ); ?>
                         </span>
                         <?php if ( $p_age ) : ?>
                             <span class="lfciath-act-age-badge"><?php echo esc_html( $p_age ); ?></span>
                         <?php endif; ?>
-                        <span class="lfciath-act-completed-badge">เสร็จสิ้น</span>
+                        <span class="lfciath-act-completed-badge"><?php echo esc_html( function_exists( 'lfciath_t' ) ? lfciath_t( 'completed' ) : 'เสร็จสิ้น' ); ?></span>
                     </div>
 
-                    <h4 class="lfciath-act-card-title"><?php the_title(); ?></h4>
+                    <h4 class="lfciath-act-card-title"><?php echo esc_html( $pc_title ); ?></h4>
 
                     <?php if ( $p_img_url ) : ?>
                     <div class="lfciath-act-card-img">
-                        <img src="<?php echo esc_url( $p_img_url ); ?>" alt="<?php the_title_attribute(); ?>" loading="lazy" />
+                        <img src="<?php echo esc_url( $p_img_url ); ?>" alt="<?php echo esc_attr( $pc_title ); ?>" loading="lazy" />
                     </div>
                     <?php endif; ?>
 
@@ -1372,20 +1479,20 @@ function lfciath_build_activity_schedule( $atts ) {
                     </p>
                     <?php endif; ?>
 
-                    <?php if ( $p_loc ) : ?>
+                    <?php if ( $pc_loc ) : ?>
                     <p class="lfciath-act-card-detail">
                         <?php if ( $p_loc_url ) : ?>
                             <a href="<?php echo esc_url( $p_loc_url ); ?>" target="_blank" rel="noopener" class="lfciath-act-map-link">
-                                📍 <?php echo esc_html( $p_loc ); ?>
+                                📍 <?php echo esc_html( $pc_loc ); ?>
                             </a>
                         <?php else : ?>
-                            📍 <?php echo esc_html( $p_loc ); ?>
+                            📍 <?php echo esc_html( $pc_loc ); ?>
                         <?php endif; ?>
                     </p>
                     <?php endif; ?>
 
-                    <?php if ( $p_desc ) : ?>
-                    <p class="lfciath-act-card-desc"><?php echo esc_html( wp_trim_words( $p_desc, 20, '...' ) ); ?></p>
+                    <?php if ( $pc_desc ) : ?>
+                    <p class="lfciath-act-card-desc"><?php echo esc_html( wp_trim_words( $pc_desc, 20, '...' ) ); ?></p>
                     <?php endif; ?>
                 </div>
 
@@ -1469,8 +1576,12 @@ function lfciath_build_activity_schedule( $atts ) {
 // ============================================================
 // 12. Helper: วันในสัปดาห์ภาษาไทย (ย่อ)
 // ============================================================
-function lfciath_thai_day_abbr( $dow_num ) {
-    $days = array( 'อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.' );
+function lfciath_thai_day_abbr( $dow_num, $lang = 'th' ) {
+    if ( $lang === 'en' ) {
+        $days = array( 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' );
+    } else {
+        $days = array( 'อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.' );
+    }
     return isset( $days[ $dow_num ] ) ? $days[ $dow_num ] : '';
 }
 
