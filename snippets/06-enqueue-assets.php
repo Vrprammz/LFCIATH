@@ -339,15 +339,21 @@ function lfciath_render_site_header() {
                 <?php
                 $current_lang = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
                 $switch_lang  = ( $current_lang === 'th' ) ? 'en' : 'th';
-                $switch_label = ( $current_lang === 'th' ) ? 'EN' : 'TH';
                 $switch_url   = '#';
                 if ( function_exists( 'lfciath_get_news_url' ) && is_singular( 'lfciath_news' ) ) {
                     $switch_url = lfciath_get_news_url( get_the_ID(), $switch_lang );
                 } elseif ( function_exists( 'lfciath_get_archive_url' ) && ( is_post_type_archive( 'lfciath_news' ) || is_tax( 'news_category' ) ) ) {
                     $switch_url = lfciath_get_archive_url( $switch_lang );
                 }
+                $th_flag = '&#x1F1F9;&#x1F1ED;';
+                $en_flag = '&#x1F1EC;&#x1F1E7;';
+                $current_flag = ( $current_lang === 'th' ) ? $th_flag : $en_flag;
+                $switch_flag  = ( $current_lang === 'th' ) ? $en_flag : $th_flag;
                 ?>
-                <a href="<?php echo esc_url( $switch_url ); ?>" class="lfciath-lang-switch"><?php echo esc_html( $switch_label ); ?></a>
+                <a href="<?php echo esc_url( $switch_url ); ?>" class="lfciath-lang-switch" title="<?php echo $switch_lang === 'en' ? 'Switch to English' : 'เปลี่ยนเป็นภาษาไทย'; ?>" onclick="document.cookie='lfciath_lang=<?php echo esc_attr( $switch_lang ); ?>;path=/;max-age=31536000';">
+                    <span class="lfciath-lang-current"><?php echo $current_flag; ?></span>
+                    <span class="lfciath-lang-arrow">&#9662;</span>
+                </a>
             </nav>
         </div>
     </header>
@@ -378,6 +384,74 @@ function lfciath_render_site_footer() {
         </div>
         <p class="lfciath-footer-copyright">&copy; <?php echo esc_html( date( 'Y' ) ); ?> LIVERPOOL FC INTERNATIONAL ACADEMY THAILAND. ALL RIGHTS RESERVED.</p>
     </footer>
+
+    <!-- Language Popup (first visit only) -->
+    <div id="lfciath-lang-popup" style="display:none;">
+        <div class="lfciath-lang-popup-overlay"></div>
+        <div class="lfciath-lang-popup-box">
+            <div class="lfciath-lang-popup-title">Choose Language / เลือกภาษา</div>
+            <div class="lfciath-lang-popup-flags">
+                <a href="#" class="lfciath-lang-popup-btn" data-lang="th">
+                    <span class="lfciath-lang-popup-flag">&#x1F1F9;&#x1F1ED;</span>
+                    <span class="lfciath-lang-popup-label">ภาษาไทย</span>
+                </a>
+                <a href="#" class="lfciath-lang-popup-btn" data-lang="en">
+                    <span class="lfciath-lang-popup-flag">&#x1F1EC;&#x1F1E7;</span>
+                    <span class="lfciath-lang-popup-label">English</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function(){
+        // Cookie helpers
+        function getCookie(n){var m=document.cookie.match(new RegExp('(?:^|; )'+n+'=([^;]*)'));return m?decodeURIComponent(m[1]):null;}
+        function setCookie(n,v,d){var e=new Date();e.setTime(e.getTime()+d*864e5);document.cookie=n+'='+v+';path=/;expires='+e.toUTCString();}
+
+        var saved = getCookie('lfciath_lang');
+        var popup = document.getElementById('lfciath-lang-popup');
+
+        // Show popup if no cookie (first visit)
+        if(!saved && popup){
+            popup.style.display='block';
+            var btns = popup.querySelectorAll('.lfciath-lang-popup-btn');
+            btns.forEach(function(btn){
+                btn.addEventListener('click',function(e){
+                    e.preventDefault();
+                    var lang = this.getAttribute('data-lang');
+                    setCookie('lfciath_lang',lang,365);
+                    popup.style.display='none';
+                    // Redirect to chosen language
+                    if(lang==='en' && window.location.pathname.indexOf('/en/')===-1){
+                        window.location.href='/en'+window.location.pathname+window.location.search;
+                    } else if(lang==='th' && window.location.pathname.indexOf('/en/')!==-1){
+                        window.location.href=window.location.pathname.replace('/en/','/')+window.location.search;
+                    }
+                });
+            });
+            // Close on overlay click
+            popup.querySelector('.lfciath-lang-popup-overlay').addEventListener('click',function(){
+                setCookie('lfciath_lang','th',365);
+                popup.style.display='none';
+            });
+        }
+
+        // Auto-redirect based on cookie (if on wrong language page)
+        if(saved==='en' && window.location.pathname.indexOf('/en/')===-1 && window.location.pathname.indexOf('/news')!==-1){
+            window.location.href='/en'+window.location.pathname+window.location.search;
+        }
+
+        // Update cookie when clicking lang switch in header
+        var langSwitch = document.querySelector('.lfciath-lang-switch');
+        if(langSwitch){
+            langSwitch.addEventListener('click',function(){
+                var newLang = window.location.pathname.indexOf('/en/')!==-1 ? 'th' : 'en';
+                setCookie('lfciath_lang',newLang,365);
+            });
+        }
+    })();
+    </script>
     <?php
 }
 
@@ -441,10 +515,21 @@ function lfciath_get_news_css() {
 #lfciath-site-header.scrolled .lfciath-header-nav-link:hover { color: #C8102E !important; }
 
 /* Language Switch */
-.lfciath-lang-switch { display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; background: rgba(255,255,255,0.15); color: #fff; font-size: 12px; font-weight: 700; border-radius: 4px; text-decoration: none; letter-spacing: 1px; transition: var(--lfc-transition); border: 1px solid rgba(255,255,255,0.3); font-family: var(--lfc-font-en); }
-.lfciath-lang-switch:hover { background: #fff; color: #C8102E; text-decoration: none; }
-.lfciath-site-header.scrolled .lfciath-lang-switch { color: #333; border-color: #ddd; background: transparent; }
-.lfciath-site-header.scrolled .lfciath-lang-switch:hover { background: #C8102E; color: #fff; border-color: #C8102E; }
+.lfciath-lang-switch { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: rgba(255,255,255,0.15); color: #fff; font-size: 18px; border-radius: 4px; text-decoration: none; transition: var(--lfc-transition); border: 1px solid rgba(255,255,255,0.3); cursor: pointer; }
+.lfciath-lang-switch:hover { background: rgba(255,255,255,0.3); text-decoration: none; color: #fff; }
+.lfciath-lang-arrow { font-size: 10px; }
+.lfciath-site-header.scrolled .lfciath-lang-switch { border-color: #ddd; background: transparent; }
+.lfciath-site-header.scrolled .lfciath-lang-switch:hover { background: #f5f5f5; }
+
+/* Language Popup */
+.lfciath-lang-popup-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 99998; }
+.lfciath-lang-popup-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: #fff; border-radius: 16px; padding: 40px 32px 32px; z-index: 99999; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3); min-width: 320px; }
+.lfciath-lang-popup-title { font-family: var(--lfc-font-thai); font-size: 18px; font-weight: 600; color: #1A1A1A; margin-bottom: 28px; }
+.lfciath-lang-popup-flags { display: flex; justify-content: center; gap: 24px; }
+.lfciath-lang-popup-btn { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 20px 28px; border-radius: 12px; text-decoration: none; border: 2px solid #eee; transition: all 0.2s ease; cursor: pointer; }
+.lfciath-lang-popup-btn:hover { border-color: #C8102E; background: #FFF5F5; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(200,16,46,0.15); text-decoration: none; }
+.lfciath-lang-popup-flag { font-size: 48px; line-height: 1; }
+.lfciath-lang-popup-label { font-family: var(--lfc-font-thai); font-size: 15px; font-weight: 600; color: #333; }
 
 /* Hamburger mobile */
 .lfciath-header-hamburger {

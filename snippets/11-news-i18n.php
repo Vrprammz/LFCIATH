@@ -28,10 +28,17 @@ add_filter( 'query_vars', 'lfciath_i18n_register_query_var' );
  * @return string 'th' or 'en'
  */
 function lfciath_get_current_lang() {
+    // 1. Check query var (from rewrite rules: /en/news/123/)
     $lang = get_query_var( 'lang', '' );
 
+    // 2. Check GET parameter (?lang=en)
     if ( empty( $lang ) && isset( $_GET['lang'] ) ) {
         $lang = sanitize_text_field( wp_unslash( $_GET['lang'] ) );
+    }
+
+    // 3. Check cookie (set by popup or lang switch button)
+    if ( empty( $lang ) && isset( $_COOKIE['lfciath_lang'] ) ) {
+        $lang = sanitize_text_field( wp_unslash( $_COOKIE['lfciath_lang'] ) );
     }
 
     $lang = strtolower( trim( $lang ) );
