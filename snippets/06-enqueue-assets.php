@@ -245,16 +245,17 @@ function lfciath_output_og_meta() {
         $desc      = get_field( 'news_subtitle', $post_id ) ?: wp_trim_words( get_the_excerpt(), 30, '...' );
         $url       = get_permalink( $post_id );
         // Social image priority: news_social_image > featured image > hero (resized)
-        $social_img = get_field( 'news_social_image', $post_id );
+        $social_id  = get_post_meta( $post_id, 'news_social_image', true );
         $hero       = get_field( 'news_hero_image', $post_id );
         $image_url  = '';
         $image_w    = 1200;
         $image_h    = 630;
-        if ( is_array( $social_img ) && ! empty( $social_img['url'] ) ) {
+        if ( $social_id ) {
             // ใช้ social image โดยเฉพาะ (แนะนำ 1200x630)
-            $image_url = $social_img['url'];
-            $image_w   = $social_img['width'] ?? 1200;
-            $image_h   = $social_img['height'] ?? 630;
+            $image_url = wp_get_attachment_url( intval( $social_id ) );
+            $meta      = wp_get_attachment_metadata( intval( $social_id ) );
+            $image_w   = $meta['width'] ?? 1200;
+            $image_h   = $meta['height'] ?? 630;
         } elseif ( has_post_thumbnail( $post_id ) ) {
             // ใช้ featured image (WordPress resize ให้)
             $image_url = get_the_post_thumbnail_url( $post_id, 'large' );
