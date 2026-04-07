@@ -201,14 +201,21 @@ function lfciath_get_news_field( $field_name, $post_id = 0, $lang = '' ) {
     $post_id = absint( $post_id );
 
     if ( $lang === 'en' ) {
-        $en_value = get_field( $field_name . '_en', $post_id );
+        // EN fields ถูก save ด้วย update_post_meta → ใช้ get_post_meta
+        $en_value = get_post_meta( $post_id, $field_name . '_en', true );
         if ( ! empty( $en_value ) ) {
             return $en_value;
         }
     }
 
-    // TH หรือ fallback จาก EN ที่ว่าง
-    return get_field( $field_name, $post_id );
+    // TH fields ใช้ ACF get_field (ถ้ามี) หรือ get_post_meta
+    if ( function_exists( 'get_field' ) ) {
+        $val = get_field( $field_name, $post_id );
+        if ( ! empty( $val ) ) {
+            return $val;
+        }
+    }
+    return get_post_meta( $post_id, $field_name, true );
 }
 
 // ========================================

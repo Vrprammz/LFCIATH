@@ -46,9 +46,9 @@ function lfciath_render_single_news_page() {
 
     // ดึงข้อมูล ACF — bilingual fields
     if ( $lang === 'en' ) {
-        $title_display  = get_field( 'news_title_en', $post->ID ) ?: get_the_title();
-        $subtitle       = get_field( 'news_subtitle_en', $post->ID ) ?: get_field( 'news_subtitle', $post->ID );
-        $author_display = get_field( 'news_author_display_en', $post->ID ) ?: get_field( 'news_author_display', $post->ID ) ?: 'LFCIATH';
+        $title_display  = get_post_meta( $post->ID, 'news_title_en', true ) ?: get_the_title();
+        $subtitle       = get_post_meta( $post->ID, 'news_subtitle_en', true ) ?: get_field( 'news_subtitle', $post->ID );
+        $author_display = get_post_meta( $post->ID, 'news_author_display_en', true ) ?: get_field( 'news_author_display', $post->ID ) ?: 'LFCIATH';
     } else {
         $title_display  = get_the_title();
         $subtitle       = get_field( 'news_subtitle', $post->ID );
@@ -89,7 +89,7 @@ function lfciath_render_single_news_page() {
 
     // Content — bilingual
     if ( $lang === 'en' ) {
-        $en_content = get_field( 'news_content_en', $post->ID );
+        $en_content = get_post_meta( $post->ID, 'news_content_en', true );
         $content = $en_content ? apply_filters( 'the_content', $en_content ) : apply_filters( 'the_content', $post->post_content );
     } else {
         $content = apply_filters( 'the_content', $post->post_content );

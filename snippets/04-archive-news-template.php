@@ -286,7 +286,7 @@ function lfciath_build_news_archive( $atts ) {
             ?>
             <?php
                 $feat_url   = function_exists( 'lfciath_get_news_url' ) ? lfciath_get_news_url( get_the_ID(), $lang ) : get_permalink();
-                $feat_title = ( $lang === 'en' && get_field( 'news_title_en', get_the_ID() ) ) ? get_field( 'news_title_en', get_the_ID() ) : get_the_title();
+                $feat_title = ( $lang === 'en' && get_post_meta( get_the_ID(), 'news_title_en', true ) ) ? get_post_meta( get_the_ID(), 'news_title_en', true ) : get_the_title();
             ?>
             <div class="lfciath-news-featured">
                 <a href="<?php echo esc_url( $feat_url ); ?>" class="lfciath-featured-link">
@@ -604,7 +604,7 @@ function lfciath_build_news_archive( $atts ) {
                 ?>
                 <?php
                 $card_url   = function_exists( 'lfciath_get_news_url' ) ? lfciath_get_news_url( get_the_ID(), $lang ) : get_permalink();
-                $card_title = ( $lang === 'en' && get_field( 'news_title_en', get_the_ID() ) ) ? get_field( 'news_title_en', get_the_ID() ) : get_the_title();
+                $card_title = ( $lang === 'en' && get_post_meta( get_the_ID(), 'news_title_en', true ) ) ? get_post_meta( get_the_ID(), 'news_title_en', true ) : get_the_title();
                 $card_subtitle = function_exists( 'lfciath_get_news_field' ) ? lfciath_get_news_field( 'news_subtitle', get_the_ID(), $lang ) : '';
                 $card_excerpt_text = $card_subtitle ? $card_subtitle : wp_trim_words( get_the_excerpt(), 20 );
                 ?>
