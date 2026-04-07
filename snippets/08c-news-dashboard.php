@@ -1091,6 +1091,10 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
     $v_description    = $post_id  ? get_post_meta( $post_id, 'activity_description',  true )  : '';
     $v_register_url   = $post_id  ? get_post_meta( $post_id, 'activity_register_url', true )  : '';
     $v_status         = $post_id  ? get_post_meta( $post_id, 'activity_status',       true )  : 'upcoming';
+    // English fields
+    $v_title_en       = $post_id  ? get_post_meta( $post_id, 'activity_title_en',       true )  : '';
+    $v_description_en = $post_id  ? get_post_meta( $post_id, 'activity_description_en', true )  : '';
+    $v_location_en    = $post_id  ? get_post_meta( $post_id, 'activity_location_en',    true )  : '';
 
     if ( '' === $v_status ) {
         $v_status = 'upcoming';
@@ -1128,7 +1132,11 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
                 <div class="lfciath-cc-card-header"><span class="dashicons dashicons-calendar-alt"></span> ข้อมูลกิจกรรม</div>
 
                 <label class="lfciath-cc-label">ชื่อกิจกรรม *</label>
-                <input type="text" name="activity_title" value="<?php echo esc_attr( $v_title ); ?>" class="lfciath-cc-input" placeholder="เช่น ฝึกซ้อมรายสัปดาห์" required style="margin-bottom:12px;" />
+                <input type="text" name="activity_title" value="<?php echo esc_attr( $v_title ); ?>" class="lfciath-cc-input" placeholder="เช่น ฝึกซ้อมรายสัปดาห์" required style="margin-bottom:6px;" />
+                <div class="lfciath-cc-en-field" style="margin-bottom:12px;">
+                    <label class="lfciath-cc-label">Activity Title (English)</label>
+                    <input type="text" name="activity_title_en" value="<?php echo esc_attr( $v_title_en ); ?>" class="lfciath-cc-input" placeholder="e.g. Weekly Training Session" />
+                </div>
 
                 <label class="lfciath-cc-label">ประเภทกิจกรรม *</label>
                 <select name="activity_type" class="lfciath-cc-input" required style="margin-bottom:12px;">
@@ -1163,7 +1171,11 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
                 <input type="text" name="activity_age_group" value="<?php echo esc_attr( $v_age_group ); ?>" class="lfciath-cc-input" placeholder="เช่น U12, U14, ทุกรุ่น" style="margin-bottom:12px;" />
 
                 <label class="lfciath-cc-label">สถานที่</label>
-                <input type="text" name="activity_location" value="<?php echo esc_attr( $v_location ); ?>" class="lfciath-cc-input" placeholder="เช่น สนามกีฬา LFCIATH" style="margin-bottom:12px;" />
+                <input type="text" name="activity_location" value="<?php echo esc_attr( $v_location ); ?>" class="lfciath-cc-input" placeholder="เช่น สนามกีฬา LFCIATH" style="margin-bottom:6px;" />
+                <div class="lfciath-cc-en-field" style="margin-bottom:12px;">
+                    <label class="lfciath-cc-label">Location (English)</label>
+                    <input type="text" name="activity_location_en" value="<?php echo esc_attr( $v_location_en ); ?>" class="lfciath-cc-input" placeholder="e.g. LFCIATH Sports Field" />
+                </div>
 
                 <label class="lfciath-cc-label">สถานะ *</label>
                 <select name="activity_status" class="lfciath-cc-input" required style="margin-bottom:12px;">
@@ -1197,6 +1209,10 @@ function lfciath_cc_view_activity_form( $base_url, $view ) {
                 <div class="lfciath-cc-card-header"><span class="dashicons dashicons-editor-alignleft"></span> รายละเอียด</div>
                 <label class="lfciath-cc-label">คำอธิบายกิจกรรม <small style="font-weight:400;color:#aaa;">(ไม่บังคับ — แนะนำไม่เกิน 2-3 บรรทัด)</small></label>
                 <textarea name="activity_description" class="lfciath-cc-input" rows="3" placeholder="รายละเอียดเพิ่มเติม..."><?php echo esc_textarea( $v_description ); ?></textarea>
+                <div class="lfciath-cc-en-field" style="margin-top:8px;">
+                    <label class="lfciath-cc-label">Description (English)</label>
+                    <textarea name="activity_description_en" class="lfciath-cc-input" rows="3" placeholder="Additional details in English..."><?php echo esc_textarea( $v_description_en ); ?></textarea>
+                </div>
 
                 <label class="lfciath-cc-label" style="margin-top:12px;">ลิ้งค์สมัคร <small style="font-weight:400;color:#aaa;">(Google Form หรือลิ้งค์สมัคร)</small></label>
                 <input type="url" name="activity_register_url" value="<?php echo esc_attr( $v_register_url ); ?>" class="lfciath-cc-input" placeholder="https://forms.gle/..." />
@@ -1443,6 +1459,13 @@ function lfciath_handle_cc_save_activity() {
         } else {
             delete_post_meta( $post_id, 'activity_image_id' );
         }
+        // English fields
+        $title_en       = isset( $_POST['activity_title_en'] )       ? sanitize_text_field( wp_unslash( $_POST['activity_title_en'] ) )           : '';
+        $description_en = isset( $_POST['activity_description_en'] ) ? sanitize_textarea_field( wp_unslash( $_POST['activity_description_en'] ) ) : '';
+        $location_en    = isset( $_POST['activity_location_en'] )    ? sanitize_text_field( wp_unslash( $_POST['activity_location_en'] ) )        : '';
+        update_post_meta( $post_id, 'activity_title_en',       $title_en );
+        update_post_meta( $post_id, 'activity_description_en', $description_en );
+        update_post_meta( $post_id, 'activity_location_en',    $location_en );
     }
 
     wp_redirect( add_query_arg( array( 'view' => 'list-activities', 'msg' => $msg ), $redirect_base ) );
