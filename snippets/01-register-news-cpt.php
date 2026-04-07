@@ -5,7 +5,7 @@
  * วิธีใช้: คัดลอกโค้ดนี้ไปวางใน Code Snippets plugin
  * ชื่อ Snippet: "LFCIATH - Register News CPT"
  * ============================================================
- * @version  V.13
+ * @version  V.14
  * @updated  2026-04-07
  */
 
@@ -106,6 +106,25 @@ function lfciath_create_default_news_categories() {
     foreach ( $default_categories as $slug => $name ) {
         if ( ! term_exists( $slug, 'news_category' ) ) {
             wp_insert_term( $name, 'news_category', array( 'slug' => $slug ) );
+        }
+    }
+
+    // ตั้งค่า English name สำหรับแต่ละหมวดหมู่ (term meta)
+    $en_names = array(
+        'academy-news'    => 'Academy News',
+        'events'          => 'Events',
+        'match-results'   => 'Match Results',
+        'player-stories'  => 'Player Stories',
+        'announcements'   => 'Announcements',
+        'partnerships'    => 'Partnerships',
+    );
+    foreach ( $en_names as $slug => $en_name ) {
+        $term = get_term_by( 'slug', $slug, 'news_category' );
+        if ( $term && ! is_wp_error( $term ) ) {
+            $existing = get_term_meta( $term->term_id, 'cat_name_en', true );
+            if ( empty( $existing ) ) {
+                update_term_meta( $term->term_id, 'cat_name_en', $en_name );
+            }
         }
     }
 }
