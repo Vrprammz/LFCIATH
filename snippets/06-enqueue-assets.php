@@ -151,26 +151,32 @@ function lfciath_news_breadcrumb() {
         return;
     }
 
+    $lang    = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
     $bc_home = function_exists( 'lfciath_t' ) ? lfciath_t( 'home' ) : 'หน้าแรก';
     $bc_news = function_exists( 'lfciath_t' ) ? lfciath_t( 'news' ) : 'ข่าวสาร';
+
+    $archive_url = function_exists( 'lfciath_get_archive_url' ) ? lfciath_get_archive_url( $lang ) : get_post_type_archive_link( 'lfciath_news' );
 
     $output = '<nav class="lfciath-breadcrumb" aria-label="breadcrumb">';
     $output .= '<a href="' . esc_url( home_url( '/' ) ) . '">' . esc_html( $bc_home ) . '</a>';
     $output .= ' <span class="lfciath-breadcrumb-sep">/</span> ';
-    $output .= '<a href="' . esc_url( get_post_type_archive_link( 'lfciath_news' ) ) . '">' . esc_html( $bc_news ) . '</a>';
+    $output .= '<a href="' . esc_url( $archive_url ) . '">' . esc_html( $bc_news ) . '</a>';
 
     if ( is_singular( 'lfciath_news' ) ) {
         $categories = get_the_terms( get_the_ID(), 'news_category' );
         if ( $categories && ! is_wp_error( $categories ) ) {
+            $cat_name = function_exists( 'lfciath_get_cat_name' ) ? lfciath_get_cat_name( $categories[0], $lang ) : $categories[0]->name;
             $output .= ' <span class="lfciath-breadcrumb-sep">/</span> ';
-            $output .= '<a href="' . esc_url( get_term_link( $categories[0] ) ) . '">' . esc_html( $categories[0]->name ) . '</a>';
+            $output .= '<a href="' . esc_url( get_term_link( $categories[0] ) ) . '">' . esc_html( $cat_name ) . '</a>';
         }
+        $display_title = ( $lang === 'en' ) ? ( get_post_meta( get_the_ID(), 'news_title_en', true ) ?: get_the_title() ) : get_the_title();
         $output .= ' <span class="lfciath-breadcrumb-sep">/</span> ';
-        $output .= '<span class="lfciath-breadcrumb-current">' . esc_html( get_the_title() ) . '</span>';
+        $output .= '<span class="lfciath-breadcrumb-current">' . esc_html( $display_title ) . '</span>';
     } elseif ( is_tax( 'news_category' ) ) {
-        $term = get_queried_object();
+        $term      = get_queried_object();
+        $term_name = function_exists( 'lfciath_get_cat_name' ) ? lfciath_get_cat_name( $term, $lang ) : $term->name;
         $output .= ' <span class="lfciath-breadcrumb-sep">/</span> ';
-        $output .= '<span class="lfciath-breadcrumb-current">' . esc_html( $term->name ) . '</span>';
+        $output .= '<span class="lfciath-breadcrumb-current">' . esc_html( $term_name ) . '</span>';
     }
 
     $output .= '</nav>';
@@ -239,10 +245,17 @@ function lfciath_output_og_meta() {
 
     $site_name = 'LFC International Academy Thailand';
 
+    $lang = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
+
     if ( is_singular( 'lfciath_news' ) ) {
-        $post_id   = get_the_ID();
-        $title     = get_the_title( $post_id );
-        $desc      = get_field( 'news_subtitle', $post_id ) ?: wp_trim_words( get_the_excerpt(), 30, '...' );
+        $post_id = get_the_ID();
+        if ( $lang === 'en' ) {
+            $title = get_post_meta( $post_id, 'news_title_en', true ) ?: get_the_title( $post_id );
+            $desc  = get_post_meta( $post_id, 'news_subtitle_en', true ) ?: get_field( 'news_subtitle', $post_id ) ?: wp_trim_words( get_the_excerpt(), 30, '...' );
+        } else {
+            $title = get_the_title( $post_id );
+            $desc  = get_field( 'news_subtitle', $post_id ) ?: wp_trim_words( get_the_excerpt(), 30, '...' );
+        }
         $url       = get_permalink( $post_id );
         // Social image priority: news_social_image > featured image > hero (resized)
         $social_id  = get_post_meta( $post_id, 'news_social_image', true );
@@ -270,15 +283,16 @@ function lfciath_output_og_meta() {
         }
         $type = 'article';
     } elseif ( is_post_type_archive( 'lfciath_news' ) ) {
-        $title     = 'ข่าวสารและกิจกรรม — LFC International Academy Thailand';
-        $desc      = 'ข่าวสารล่าสุดจาก Liverpool FC International Academy Thailand';
+        $title     = function_exists( 'lfciath_t' ) ? lfciath_t( 'news_title' ) . ' — LFC International Academy Thailand' : 'ข่าวสารและกิจกรรม — LFC International Academy Thailand';
+        $desc      = ( $lang === 'en' ) ? 'Latest news from Liverpool FC International Academy Thailand' : 'ข่าวสารล่าสุดจาก Liverpool FC International Academy Thailand';
         $url       = get_post_type_archive_link( 'lfciath_news' );
         $image_url = '';
         $type      = 'website';
     } elseif ( is_tax( 'news_category' ) ) {
         $term      = get_queried_object();
-        $title     = $term->name . ' — ข่าวสาร';
-        $desc      = $term->description ?: 'ข่าว ' . $term->name;
+        $cat_name  = function_exists( 'lfciath_get_cat_name' ) ? lfciath_get_cat_name( $term, $lang ) : $term->name;
+        $title     = $cat_name . ' — ' . ( function_exists( 'lfciath_t' ) ? lfciath_t( 'news' ) : 'ข่าวสาร' );
+        $desc      = $term->description ?: ( ( $lang === 'en' ) ? 'News: ' . $cat_name : 'ข่าว ' . $cat_name );
         $url       = get_term_link( $term );
         $image_url = '';
         $type      = 'website';
@@ -290,8 +304,7 @@ function lfciath_output_og_meta() {
     echo '<meta property="og:description" content="' . esc_attr( $desc ) . '">' . "\n";
     echo '<meta property="og:url" content="' . esc_url( $url ) . '">' . "\n";
     echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '">' . "\n";
-    $og_lang = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
-    echo '<meta property="og:locale" content="' . ( $og_lang === 'en' ? 'en_US' : 'th_TH' ) . '">' . "\n";
+    echo '<meta property="og:locale" content="' . ( $lang === 'en' ? 'en_US' : 'th_TH' ) . '">' . "\n";
     if ( ! empty( $image_url ) ) {
         echo '<meta property="og:image" content="' . esc_url( $image_url ) . '">' . "\n";
         echo '<meta property="og:image:width" content="' . esc_attr( $image_w ) . '">' . "\n";

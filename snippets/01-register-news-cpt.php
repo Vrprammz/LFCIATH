@@ -149,7 +149,7 @@ add_filter( 'redirect_canonical', 'lfciath_prevent_news_guess_redirect' );
 function lfciath_disable_guess_redirect( $do_redirect ) {
     // ตรวจสอบว่า request URL คือ /news/ หรือไม่
     $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
-    if ( preg_match( '#^/news/?(\?.*)?$#', $request_uri ) ) {
+    if ( preg_match( '#^(/en)?/news/?(\?.*)?$#', $request_uri ) ) {
         return false;
     }
     return $do_redirect;
@@ -236,6 +236,10 @@ function lfciath_news_post_type_link( $post_link, $post ) {
     if ( $post->post_type !== 'lfciath_news' ) {
         return $post_link;
     }
+    $lang = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
+    if ( $lang === 'en' ) {
+        return home_url( '/en/news/' . $post->ID . '/' );
+    }
     return home_url( '/news/' . $post->ID . '/' );
 }
 add_filter( 'post_type_link', 'lfciath_news_post_type_link', 10, 2 );
@@ -260,19 +264,28 @@ function lfciath_news_redirect_old_slugs() {
     // ลบ trailing slash เพื่อเปรียบเทียบ
     $request_path = rtrim( $request_path, '/' );
 
-    // URL ที่ถูกต้อง = /news/{ID}
-    $correct_path = '/news/' . $post->ID;
+    // URL ที่ถูกต้อง = /news/{ID} หรือ /en/news/{ID}
+    $th_correct = '/news/' . $post->ID;
+    $en_correct = '/en/news/' . $post->ID;
 
-    // ถ้า URL ปัจจุบันไม่ตรงกับ /news/{ID} — redirect 301
-    if ( $request_path !== $correct_path ) {
-        $correct_url = home_url( '/news/' . $post->ID . '/' );
-        // คงไว้ซึ่ง query string (ถ้ามี)
-        $query_string = isset( $_SERVER['QUERY_STRING'] ) ? $_SERVER['QUERY_STRING'] : '';
-        if ( ! empty( $query_string ) ) {
-            $correct_url .= '?' . $query_string;
-        }
-        wp_redirect( esc_url_raw( $correct_url ), 301 );
-        exit;
+    // ถ้า path ตรงกับอันใดอันหนึ่ง = ไม่ต้อง redirect
+    if ( $request_path === $th_correct || $request_path === $en_correct ) {
+        return; // URL ถูกต้องแล้ว
     }
+
+    // ถ้าไม่ตรง — redirect 301 ไป URL ที่ถูกต้องตาม lang ปัจจุบัน
+    $lang = function_exists( 'lfciath_get_current_lang' ) ? lfciath_get_current_lang() : 'th';
+    if ( $lang === 'en' ) {
+        $correct_url = home_url( '/en/news/' . $post->ID . '/' );
+    } else {
+        $correct_url = home_url( '/news/' . $post->ID . '/' );
+    }
+    // คงไว้ซึ่ง query string (ถ้ามี)
+    $query_string = isset( $_SERVER['QUERY_STRING'] ) ? $_SERVER['QUERY_STRING'] : '';
+    if ( ! empty( $query_string ) ) {
+        $correct_url .= '?' . $query_string;
+    }
+    wp_redirect( esc_url_raw( $correct_url ), 301 );
+    exit;
 }
 add_action( 'template_redirect', 'lfciath_news_redirect_old_slugs', 1 );
