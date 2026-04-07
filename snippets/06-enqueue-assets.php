@@ -451,11 +451,8 @@ function lfciath_render_site_footer() {
             });
         }
 
-        // Auto-redirect based on cookie — ONLY on first visit (no popup shown yet means cookie was set by popup)
-        // ไม่ redirect ถ้า user เปลี่ยนภาษาเองผ่าน lang switch (ใช้ URL เป็น source of truth)
-        if(saved==='en' && !document.cookie.match(/lfciath_lang_manual/) && window.location.pathname.indexOf('/en/')===-1 && window.location.pathname.indexOf('/news')!==-1){
-            window.location.href='/en'+window.location.pathname+window.location.search;
-        }
+        // NO auto-redirect — URL is source of truth, not cookie
+        // Cookie is only used to remember popup choice
 
         // Lang switch in header — set cookie THEN navigate
         var langSwitch = document.querySelector('.lfciath-lang-switch');
@@ -464,7 +461,6 @@ function lfciath_render_site_footer() {
                 e.preventDefault();
                 var newLang = window.location.pathname.indexOf('/en/')!==-1 ? 'th' : 'en';
                 setCookie('lfciath_lang',newLang,365);
-                setCookie('lfciath_lang_manual','1',365);
                 window.location.href = this.getAttribute('href');
             });
         }
