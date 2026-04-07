@@ -28,18 +28,21 @@ add_filter( 'query_vars', 'lfciath_i18n_register_query_var' );
  * @return string 'th' or 'en'
  */
 function lfciath_get_current_lang() {
-    // 1. Check query var (from rewrite rules: /en/news/123/)
+    // 1. URL path is the source of truth: /en/news/ = EN, /news/ = TH
+    $request_uri = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+    if ( strpos( $request_uri, '/en/news' ) !== false || strpos( $request_uri, '/en/news/' ) !== false ) {
+        return 'en';
+    }
+
+    // 2. Check query var (from rewrite rules)
     $lang = get_query_var( 'lang', '' );
 
-    // 2. Check GET parameter (?lang=en)
+    // 3. Check GET parameter (?lang=en)
     if ( empty( $lang ) && isset( $_GET['lang'] ) ) {
         $lang = sanitize_text_field( wp_unslash( $_GET['lang'] ) );
     }
 
-    // 3. Check cookie (set by popup or lang switch button)
-    if ( empty( $lang ) && isset( $_COOKIE['lfciath_lang'] ) ) {
-        $lang = sanitize_text_field( wp_unslash( $_COOKIE['lfciath_lang'] ) );
-    }
+    // Cookie is NOT used here — cookie is only for the first-visit popup redirect (JS side)
 
     $lang = strtolower( trim( $lang ) );
 
