@@ -4,8 +4,8 @@
  * ============================================================
  * ต้อง Activate snippet 8A ก่อน
  * ============================================================
- * @version  V.12
- * @updated  2026-03-24
+ * @version  V.13
+ * @updated  2026-04-07
  */
 
 // ========================================
@@ -33,6 +33,12 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
     $v_featured = $post ? (int) get_post_meta( $editing_id, 'news_is_featured', true ) : 0;
     $v_video    = $post ? get_post_meta( $editing_id, 'news_video_url', true ) : '';
     $v_status   = $post ? $post->post_status : 'draft';
+
+    // English fields
+    $v_title_en    = $post ? get_post_meta( $editing_id, 'news_title_en', true ) : '';
+    $v_subtitle_en = $post ? get_post_meta( $editing_id, 'news_subtitle_en', true ) : '';
+    $v_content_en  = $post ? get_post_meta( $editing_id, 'news_content_en', true ) : '';
+    $v_author_en   = $post ? get_post_meta( $editing_id, 'news_author_display_en', true ) : '';
 
     // Hero image
     $v_hero_id  = $post ? (int) get_post_thumbnail_id( $editing_id ) : 0;
@@ -73,12 +79,20 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
                 <div class="lfciath-cc-card">
                     <label class="lfciath-cc-label">หัวข้อข่าว <span style="color:#C8102E;">*</span></label>
                     <input type="text" name="news_title" value="<?php echo esc_attr( $v_title ); ?>" class="lfciath-cc-input lfciath-cc-input-title" placeholder="พิมพ์หัวข้อข่าว..." required />
+                    <div class="lfciath-cc-en-field">
+                        <label class="lfciath-cc-label">Title (English)</label>
+                        <input type="text" name="news_title_en" value="<?php echo esc_attr( $v_title_en ); ?>" class="lfciath-cc-input" placeholder="English title (optional)" />
+                    </div>
                 </div>
 
                 <!-- Subtitle -->
                 <div class="lfciath-cc-card">
                     <label class="lfciath-cc-label">คำบรรยายรอง (Subtitle)</label>
                     <input type="text" name="news_subtitle" value="<?php echo esc_attr( $v_subtitle ); ?>" class="lfciath-cc-input" placeholder="คำอธิบายสั้นๆ (ไม่บังคับ)" />
+                    <div class="lfciath-cc-en-field">
+                        <label class="lfciath-cc-label">Subtitle (English)</label>
+                        <input type="text" name="news_subtitle_en" value="<?php echo esc_attr( $v_subtitle_en ); ?>" class="lfciath-cc-input" placeholder="English subtitle (optional)" />
+                    </div>
                 </div>
 
                 <!-- Hero Image -->
@@ -105,6 +119,15 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
                         'quicktags'     => true,
                     ));
                     ?>
+                    <div class="lfciath-cc-en-field" style="margin-top:20px;">
+                        <label class="lfciath-cc-label">Content (English)</label>
+                        <?php wp_editor( $v_content_en, 'news_content_en', array(
+                            'textarea_name' => 'news_content_en',
+                            'media_buttons' => true,
+                            'textarea_rows' => 12,
+                            'teeny'         => false,
+                        ) ); ?>
+                    </div>
                 </div>
 
                 <!-- Gallery -->
@@ -177,6 +200,10 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
                     <input type="text" name="news_display_date" value="<?php echo esc_attr( $v_date ); ?>" class="lfciath-cc-input" placeholder="dd/mm/yyyy" />
                     <label class="lfciath-cc-label" style="margin-top:12px;">ผู้เขียน</label>
                     <input type="text" name="news_author" value="<?php echo esc_attr( $v_author ); ?>" class="lfciath-cc-input" />
+                    <div class="lfciath-cc-en-field">
+                        <label class="lfciath-cc-label">Author (English)</label>
+                        <input type="text" name="news_author_display_en" value="<?php echo esc_attr( $v_author_en ); ?>" class="lfciath-cc-input" placeholder="English author name" />
+                    </div>
                 </div>
 
                 <!-- ข่าวเด่น -->
@@ -317,6 +344,12 @@ function lfciath_handle_cc_save_news() {
     $hero_id  = isset( $_POST['news_hero_image_id'] ) ? intval( $_POST['news_hero_image_id'] ) : 0;
     $cats     = isset( $_POST['news_category'] ) && is_array( $_POST['news_category'] ) ? array_map( 'sanitize_text_field', wp_unslash( $_POST['news_category'] ) ) : array();
 
+    // English fields
+    $title_en    = isset( $_POST['news_title_en'] ) ? sanitize_text_field( wp_unslash( $_POST['news_title_en'] ) ) : '';
+    $subtitle_en = isset( $_POST['news_subtitle_en'] ) ? sanitize_text_field( wp_unslash( $_POST['news_subtitle_en'] ) ) : '';
+    $content_en  = isset( $_POST['news_content_en'] ) ? wp_kses_post( wp_unslash( $_POST['news_content_en'] ) ) : '';
+    $author_en   = isset( $_POST['news_author_display_en'] ) ? sanitize_text_field( wp_unslash( $_POST['news_author_display_en'] ) ) : '';
+
     if ( empty( $title ) ) {
         wp_redirect( add_query_arg( array( 'view' => 'create-news', 'msg' => 'no_title' ), $redirect_base ) );
         exit;
@@ -363,6 +396,12 @@ function lfciath_handle_cc_save_news() {
             update_post_meta( $post_id, $key, $val );
         }
     }
+
+    // English fields (post meta)
+    update_post_meta( $post_id, 'news_title_en', $title_en );
+    update_post_meta( $post_id, 'news_subtitle_en', $subtitle_en );
+    update_post_meta( $post_id, 'news_content_en', $content_en );
+    update_post_meta( $post_id, 'news_author_display_en', $author_en );
 
     // Hero image
     if ( $hero_id > 0 ) {

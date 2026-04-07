@@ -8,8 +8,8 @@
  * เพิ่มหน้า "สร้างข่าวใหม่" ภายใต้เมนู "ข่าวสาร" ใน wp-admin
  * ฟอร์มง่ายๆ กรอกข้อมูล + อัปโหลดรูป + เผยแพร่ได้เลย
  * ============================================================
- * @version  V.12
- * @updated  2026-03-24
+ * @version  V.13
+ * @updated  2026-04-07
  */
 
 // ========================================
@@ -65,6 +65,12 @@ function lfciath_handle_news_save() {
     $status   = isset( $_POST['news_status'] ) ? sanitize_text_field( wp_unslash( $_POST['news_status'] ) ) : 'draft';
     $hero_id  = isset( $_POST['news_hero_image_id'] ) ? intval( $_POST['news_hero_image_id'] ) : 0;
 
+    // English fields
+    $title_en    = isset( $_POST['news_title_en'] ) ? sanitize_text_field( wp_unslash( $_POST['news_title_en'] ) ) : '';
+    $subtitle_en = isset( $_POST['news_subtitle_en'] ) ? sanitize_text_field( wp_unslash( $_POST['news_subtitle_en'] ) ) : '';
+    $content_en  = isset( $_POST['news_content_en'] ) ? wp_kses_post( wp_unslash( $_POST['news_content_en'] ) ) : '';
+    $author_en   = isset( $_POST['news_author_display_en'] ) ? sanitize_text_field( wp_unslash( $_POST['news_author_display_en'] ) ) : '';
+
     if ( empty( $title ) ) {
         wp_redirect( admin_url( 'edit.php?post_type=lfciath_news&page=lfciath-news-create&error=no_title' ) );
         exit;
@@ -108,6 +114,12 @@ function lfciath_handle_news_save() {
         update_post_meta( $post_id, 'news_is_featured', $featured );
         update_post_meta( $post_id, 'news_video_url', $video );
     }
+
+    // English fields (post meta)
+    update_post_meta( $post_id, 'news_title_en', $title_en );
+    update_post_meta( $post_id, 'news_subtitle_en', $subtitle_en );
+    update_post_meta( $post_id, 'news_content_en', $content_en );
+    update_post_meta( $post_id, 'news_author_display_en', $author_en );
 
     // Hero image → ตั้งเป็น Featured Image + ACF field
     if ( $hero_id > 0 ) {
@@ -166,6 +178,12 @@ function lfciath_news_dashboard_page() {
     $val_featured = $edit_post ? get_post_meta( $editing_id, 'news_is_featured', true ) : 0;
     $val_video    = $edit_post ? get_post_meta( $editing_id, 'news_video_url', true ) : '';
     $val_status   = $edit_post ? $edit_post->post_status : 'draft';
+
+    // English fields
+    $val_title_en    = $edit_post ? get_post_meta( $editing_id, 'news_title_en', true ) : '';
+    $val_subtitle_en = $edit_post ? get_post_meta( $editing_id, 'news_subtitle_en', true ) : '';
+    $val_content_en  = $edit_post ? get_post_meta( $editing_id, 'news_content_en', true ) : '';
+    $val_author_en   = $edit_post ? get_post_meta( $editing_id, 'news_author_display_en', true ) : '';
 
     // Hero image
     $val_hero_id  = $edit_post ? get_post_thumbnail_id( $editing_id ) : 0;
@@ -251,6 +269,12 @@ function lfciath_news_dashboard_page() {
                                value="<?php echo esc_attr( $val_title ); ?>"
                                class="lfciath-dash-input-full"
                                placeholder="พิมพ์หัวข้อข่าว..." required />
+                        <div class="lfciath-dash-en-field">
+                            <label class="lfciath-dash-label" for="news_title_en">Title (English)</label>
+                            <input type="text" name="news_title_en" id="news_title_en"
+                                   value="<?php echo esc_attr( $val_title_en ); ?>"
+                                   placeholder="English title (optional)" class="lfciath-dash-input-full" />
+                        </div>
                     </div>
 
                     <!-- คำบรรยายรอง -->
@@ -260,6 +284,12 @@ function lfciath_news_dashboard_page() {
                                value="<?php echo esc_attr( $val_subtitle ); ?>"
                                class="lfciath-dash-input-full"
                                placeholder="คำอธิบายสั้นๆ ใต้หัวข้อ (ไม่บังคับ)" />
+                        <div class="lfciath-dash-en-field">
+                            <label class="lfciath-dash-label" for="news_subtitle_en">Subtitle (English)</label>
+                            <input type="text" name="news_subtitle_en" id="news_subtitle_en"
+                                   value="<?php echo esc_attr( $val_subtitle_en ); ?>"
+                                   placeholder="English subtitle (optional)" class="lfciath-dash-input-full" />
+                        </div>
                     </div>
 
                     <!-- ภาพ Hero Banner -->
@@ -286,6 +316,15 @@ function lfciath_news_dashboard_page() {
                             'quicktags'     => true,
                         ) );
                         ?>
+                        <div class="lfciath-dash-en-field" style="margin-top:20px;">
+                            <label class="lfciath-dash-label" for="news_content_en">Content (English)</label>
+                            <?php wp_editor( $val_content_en, 'news_content_en', array(
+                                'textarea_name' => 'news_content_en',
+                                'media_buttons' => true,
+                                'textarea_rows' => 12,
+                                'teeny'         => false,
+                            ) ); ?>
+                        </div>
                     </div>
 
                     <!-- แกลเลอรี -->
@@ -361,6 +400,12 @@ function lfciath_news_dashboard_page() {
                         <input type="text" name="news_author" id="news_author"
                                value="<?php echo esc_attr( $val_author ); ?>"
                                class="lfciath-dash-input-full" />
+                        <div class="lfciath-dash-en-field">
+                            <label class="lfciath-dash-label" for="news_author_display_en">Author (English)</label>
+                            <input type="text" name="news_author_display_en" id="news_author_display_en"
+                                   value="<?php echo esc_attr( $val_author_en ); ?>"
+                                   placeholder="English author name" class="lfciath-dash-input-full" />
+                        </div>
                     </div>
 
                     <!-- ข่าวเด่น -->
@@ -409,6 +454,14 @@ function lfciath_news_dashboard_page() {
         font-size: 20px;
         font-weight: 600;
         padding: 14px 16px;
+    }
+    .lfciath-dash-en-field {
+        border-left: 3px solid #1565C0;
+        padding-left: 12px;
+        margin-top: 10px;
+        background: #f8f9ff;
+        padding: 12px;
+        border-radius: 4px;
     }
     .lfciath-gal-slot:hover {
         border-color: #C8102E;

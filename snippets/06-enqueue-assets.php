@@ -244,16 +244,28 @@ function lfciath_output_og_meta() {
         $title     = get_the_title( $post_id );
         $desc      = get_field( 'news_subtitle', $post_id ) ?: wp_trim_words( get_the_excerpt(), 30, '...' );
         $url       = get_permalink( $post_id );
-        $hero      = get_field( 'news_hero_image', $post_id );
-        $image_url = '';
-        $image_w   = 1200;
-        $image_h   = 630;
-        if ( is_array( $hero ) && ! empty( $hero['url'] ) ) {
-            $image_url = $hero['url'];
-            $image_w   = $hero['width'] ?? 1200;
-            $image_h   = $hero['height'] ?? 630;
+        // Social image priority: news_social_image > featured image > hero (resized)
+        $social_img = get_field( 'news_social_image', $post_id );
+        $hero       = get_field( 'news_hero_image', $post_id );
+        $image_url  = '';
+        $image_w    = 1200;
+        $image_h    = 630;
+        if ( is_array( $social_img ) && ! empty( $social_img['url'] ) ) {
+            // ใช้ social image โดยเฉพาะ (แนะนำ 1200x630)
+            $image_url = $social_img['url'];
+            $image_w   = $social_img['width'] ?? 1200;
+            $image_h   = $social_img['height'] ?? 630;
         } elseif ( has_post_thumbnail( $post_id ) ) {
-            $image_url = get_the_post_thumbnail_url( $post_id, 'full' );
+            // ใช้ featured image (WordPress resize ให้)
+            $image_url = get_the_post_thumbnail_url( $post_id, 'large' );
+        } elseif ( is_array( $hero ) && ! empty( $hero['sizes']['large'] ) ) {
+            // ใช้ hero image ขนาด large (resized)
+            $image_url = $hero['sizes']['large'];
+        } elseif ( is_array( $hero ) && ! empty( $hero['url'] ) ) {
+            // fallback: hero full size
+            $image_url = $hero['url'];
+            $image_w   = $hero['width'] ?? 1920;
+            $image_h   = $hero['height'] ?? 600;
         }
         $type = 'article';
     } elseif ( is_post_type_archive( 'lfciath_news' ) ) {
@@ -350,9 +362,10 @@ function lfciath_render_site_header() {
                 $current_flag = ( $current_lang === 'th' ) ? $th_flag : $en_flag;
                 $switch_flag  = ( $current_lang === 'th' ) ? $en_flag : $th_flag;
                 ?>
-                <a href="<?php echo esc_url( $switch_url ); ?>" class="lfciath-lang-switch" title="<?php echo $switch_lang === 'en' ? 'Switch to English' : 'เปลี่ยนเป็นภาษาไทย'; ?>" onclick="document.cookie='lfciath_lang=<?php echo esc_attr( $switch_lang ); ?>;path=/;max-age=31536000';">
+                <a href="<?php echo esc_url( $switch_url ); ?>" class="lfciath-lang-switch" title="<?php echo $switch_lang === 'en' ? 'Switch to English' : 'เปลี่ยนเป็นภาษาไทย'; ?>">
                     <span class="lfciath-lang-current"><?php echo $current_flag; ?></span>
-                    <span class="lfciath-lang-arrow">&#9662;</span>
+                    <span class="lfciath-lang-divider">|</span>
+                    <span class="lfciath-lang-switch-to"><?php echo $switch_flag; ?></span>
                 </a>
             </nav>
         </div>
@@ -437,17 +450,21 @@ function lfciath_render_site_footer() {
             });
         }
 
-        // Auto-redirect based on cookie (if on wrong language page)
-        if(saved==='en' && window.location.pathname.indexOf('/en/')===-1 && window.location.pathname.indexOf('/news')!==-1){
+        // Auto-redirect based on cookie — ONLY on first visit (no popup shown yet means cookie was set by popup)
+        // ไม่ redirect ถ้า user เปลี่ยนภาษาเองผ่าน lang switch (ใช้ URL เป็น source of truth)
+        if(saved==='en' && !document.cookie.match(/lfciath_lang_manual/) && window.location.pathname.indexOf('/en/')===-1 && window.location.pathname.indexOf('/news')!==-1){
             window.location.href='/en'+window.location.pathname+window.location.search;
         }
 
-        // Update cookie when clicking lang switch in header
+        // Lang switch in header — set cookie THEN navigate
         var langSwitch = document.querySelector('.lfciath-lang-switch');
         if(langSwitch){
-            langSwitch.addEventListener('click',function(){
+            langSwitch.addEventListener('click',function(e){
+                e.preventDefault();
                 var newLang = window.location.pathname.indexOf('/en/')!==-1 ? 'th' : 'en';
                 setCookie('lfciath_lang',newLang,365);
+                setCookie('lfciath_lang_manual','1',365);
+                window.location.href = this.getAttribute('href');
             });
         }
     })();

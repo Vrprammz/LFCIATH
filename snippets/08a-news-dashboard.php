@@ -7,8 +7,8 @@
  * 2. สร้าง WP Page → ใส่ shortcode [lfciath_command_center]
  * 3. เฉพาะ admin/editor เข้าได้ (คนอื่น redirect ไป login)
  * ============================================================
- * @version  V.12
- * @updated  2026-03-24
+ * @version  V.13
+ * @updated  2026-04-07
  */
 
 // ========================================
@@ -699,6 +699,8 @@ textarea.lfciath-cc-input{min-height:100px;resize:vertical;}
 .lfciath-cc-score-row{display:flex;align-items:center;gap:12px;}
 .lfciath-cc-score-input{width:80px;text-align:center;font-size:24px;font-weight:800;padding:12px;}
 .lfciath-cc-score-vs{font-size:20px;font-weight:700;color:#888888;}
+
+.lfciath-cc-en-field{border-left:3px solid #1565C0;padding-left:12px;margin-top:10px;background:#f8f9ff;padding:12px;border-radius:4px;}
 
 @media(max-width:1024px){.lfciath-cc-stats{grid-template-columns:repeat(2,1fr);}.lfciath-cc-form-grid{grid-template-columns:1fr;}}
 @media(max-width:768px){
