@@ -337,7 +337,6 @@ function lfciath_render_site_header() {
         'COURSES'        => 'https://www.lfcacademyth.com/courses-2/',
         'ABOUT'          => 'https://www.lfcacademyth.com/about/',
         'PARTNERS'       => 'https://www.lfcacademyth.com/partners/',
-        'EVENTS'         => 'https://www.lfcacademyth.com/events/',
         'CONTACT'        => 'https://www.lfcacademyth.com/contact/',
         'FAQ'            => 'https://www.lfcacademyth.com/faq/',
         'LOGIN/REGISTER' => 'https://register.lfcacademyth.com/',
