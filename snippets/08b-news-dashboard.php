@@ -41,8 +41,10 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
     $v_author_en   = $post ? get_post_meta( $editing_id, 'news_author_display_en', true ) : '';
 
     // Hero image
-    $v_hero_id  = $post ? (int) get_post_thumbnail_id( $editing_id ) : 0;
-    $v_hero_url = $v_hero_id ? wp_get_attachment_image_url( $v_hero_id, 'medium' ) : '';
+    $v_hero_id    = $post ? (int) get_post_thumbnail_id( $editing_id ) : 0;
+    $v_hero_url   = $v_hero_id ? wp_get_attachment_image_url( $v_hero_id, 'medium' ) : '';
+    $v_social_id  = $post ? (int) get_post_meta( $editing_id, 'news_social_image', true ) : 0;
+    $v_social_url = $v_social_id ? wp_get_attachment_image_url( $v_social_id, 'medium' ) : '';
 
     // Gallery
     $gallery = array();
@@ -105,6 +107,18 @@ function lfciath_cc_view_news_form( $base_url, $view ) {
                     <input type="hidden" name="news_hero_image_id" id="lfciath-cc-hero-id" value="<?php echo esc_attr( $v_hero_id ); ?>" />
                     <button type="button" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm" id="lfciath-cc-hero-upload">เลือกรูป</button>
                     <button type="button" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm" id="lfciath-cc-hero-remove" style="<?php echo $v_hero_id ? '' : 'display:none;'; ?>">ลบ</button>
+                </div>
+
+                <!-- Social Share Image (og:image) -->
+                <div class="lfciath-cc-card" style="border-left:3px solid #1877F2;padding-left:16px;">
+                    <label class="lfciath-cc-label">ภาพ Social Share (Facebook/LINE)</label>
+                    <p style="color:#888888;font-size:12px;margin:0 0 10px;">แนะนำ 1200x630px — ใช้แสดงเมื่อแชร์ลิงก์ข่าวบนโซเชียล</p>
+                    <div id="lfciath-cc-social-preview" style="margin-bottom:10px;<?php echo $v_social_url ? '' : 'display:none;'; ?>">
+                        <?php if ( $v_social_url ) : ?><img id="lfciath-cc-social-img" src="<?php echo esc_url( $v_social_url ); ?>" style="max-width:100%;max-height:160px;border-radius:8px;object-fit:cover;" /><?php endif; ?>
+                    </div>
+                    <input type="hidden" name="news_social_image_id" id="lfciath-cc-social-id" value="<?php echo esc_attr( $v_social_id ); ?>" />
+                    <button type="button" class="lfciath-cc-btn lfciath-cc-btn-secondary lfciath-cc-btn-sm" id="lfciath-cc-social-upload">เลือกรูป</button>
+                    <button type="button" class="lfciath-cc-btn lfciath-cc-btn-danger lfciath-cc-btn-sm" id="lfciath-cc-social-remove" style="<?php echo $v_social_id ? '' : 'display:none;'; ?>">ลบ</button>
                 </div>
 
                 <!-- Content -->
@@ -402,6 +416,10 @@ function lfciath_handle_cc_save_news() {
     update_post_meta( $post_id, 'news_subtitle_en', $subtitle_en );
     update_post_meta( $post_id, 'news_content_en', $content_en );
     update_post_meta( $post_id, 'news_author_display_en', $author_en );
+
+    // Social share image
+    $social_id = isset( $_POST['news_social_image_id'] ) ? intval( $_POST['news_social_image_id'] ) : 0;
+    update_post_meta( $post_id, 'news_social_image', $social_id > 0 ? $social_id : '' );
 
     // Hero image
     if ( $hero_id > 0 ) {

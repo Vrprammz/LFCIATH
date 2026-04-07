@@ -346,6 +346,26 @@ function lfciath_cc_render( $view, $base_url ) {
             $(this).hide();
         });
 
+        // Social Share Image upload
+        $(document).on('click', '#lfciath-cc-social-upload', function(e) {
+            e.preventDefault();
+            var frame = wp.media({ title:'เลือกภาพ Social Share (1200x630)', button:{text:'ใช้ภาพนี้'}, multiple:false, library:{type:'image'} });
+            frame.on('select', function() {
+                var a = frame.state().get('selection').first().toJSON();
+                var u = a.sizes && a.sizes.medium ? a.sizes.medium.url : a.url;
+                $('#lfciath-cc-social-id').val(a.id);
+                $('#lfciath-cc-social-preview').html('<img id="lfciath-cc-social-img" src="'+u+'" style="max-width:100%;max-height:160px;border-radius:8px;object-fit:cover;" />').show();
+                $('#lfciath-cc-social-remove').show();
+            });
+            frame.open();
+        });
+        $(document).on('click', '#lfciath-cc-social-remove', function(e) {
+            e.preventDefault();
+            $('#lfciath-cc-social-id').val('');
+            $('#lfciath-cc-social-preview').hide().html('');
+            $(this).hide();
+        });
+
         // Gallery: helper to update count & clear-all button
         function updateGalCount() {
             var filled = $('.lfciath-cc-gal-slot.has-image').length;
