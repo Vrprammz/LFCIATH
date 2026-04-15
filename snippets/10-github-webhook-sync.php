@@ -50,6 +50,7 @@ function lfciath_github_snippet_map() {
         'snippets/10-github-webhook-sync.php'    => '10 - LFCIATH - GitHub Webhook Sync',
         'snippets/11-news-i18n.php'              => '11 - LFCIATH - News i18n',
         'snippets/12-pdpa-consent.php'           => '12 - LFCIATH - PDPA Consent',
+        'snippets/13-image-optimizer.php'        => '13 - LFCIATH - Image Optimizer',
     );
 }
 
