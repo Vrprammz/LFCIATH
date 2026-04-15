@@ -29,7 +29,7 @@ if ( ! defined( 'LFCIATH_IMG_JPEG_QUALITY' ) ) {
     define( 'LFCIATH_IMG_JPEG_QUALITY', 82 ); // 0-100 — แนะนำ 80-85
 }
 if ( ! defined( 'LFCIATH_IMG_MAX_FILESIZE_MB' ) ) {
-    define( 'LFCIATH_IMG_MAX_FILESIZE_MB', 10 ); // MB — จำกัดขนาดไฟล์อัปโหลดสูงสุด
+    define( 'LFCIATH_IMG_MAX_FILESIZE_MB', 30 ); // MB — รองรับรูป iPhone/DSLR (ตัว optimizer จะย่อให้เอง)
 }
 
 // ========================================
